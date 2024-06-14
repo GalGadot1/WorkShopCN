@@ -37,7 +37,7 @@ void measure_throughput(int sock, int message_size, int num_messages) {
     time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
 
     double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
-    printf("%d\t%d\t%f\tMB/s\n", message_size, num_messages, throughput);
+    printf("%d\t%d\t%f\tGb/s\n", message_size, num_messages, throughput / 1000 * 8);
 
     free(message);
 }
