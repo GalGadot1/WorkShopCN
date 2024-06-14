@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define PORT 11325
+#define WARM_UP_FACTOR 100
 
 void error(const char *msg) {
     perror(msg);
@@ -21,7 +22,7 @@ void measure_throughput(int sock, int message_size, int num_messages) {
     struct timespec start, end;
     long total_bytes = 0;
 
-    for (int i = 0; i < num_messages / 2; i++) {
+    for (int i = 0; i < WARM_UP_FACTOR; i++) {
         send(sock, message, message_size, 0);
     }
 
