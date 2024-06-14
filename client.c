@@ -32,7 +32,7 @@ void measure_throughput(int sock, int message_size, int num_messages) {
     time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
 
     double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
-    printf("%d\t%d\tMB/s\n", message_size, num_messages, throughput);
+    printf("%d\t%d\t%f\tMB/s\n", message_size, num_messages, throughput);
 
     free(message);
 }
@@ -55,7 +55,7 @@ int main(int argc, char const *argv[]) {
         error("Connection Failed");
 
     int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
-    int num_messages = 1000; // Number of messages to send
+    int num_messages = 10000; // Number of messages to send
 
     for (int i = 0; i < sizeof(message_sizes) / sizeof(message_sizes[0]); i++) {
         measure_throughput(sock, message_sizes[i], num_messages);

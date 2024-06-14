@@ -24,7 +24,7 @@ int main() {
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         error("socket failed");
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
         error("setsockopt");
 
     address.sin_family = AF_INET;
