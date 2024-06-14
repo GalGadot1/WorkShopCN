@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define PORT 11325
-#define WARM_UP_FACTOR 100
+#define WARM_UP_FACTOR 1000
 
 void error(const char *msg) {
     perror(msg);
