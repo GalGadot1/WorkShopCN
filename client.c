@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 
-#define PORT 8080
+#define PORT 11325
 
 void error(const char *msg) {
     perror(msg);
@@ -20,6 +20,10 @@ void measure_throughput(int sock, int message_size, int num_messages) {
     memset(message, 'A', message_size);
     struct timespec start, end;
     long total_bytes = 0;
+
+    for (int i = 0; i < num_messages / 2; i++) {
+        send(sock, message, message_size, 0);
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     for (int i = 0; i < num_messages; i++) {
