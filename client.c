@@ -47,6 +47,10 @@ int main(int argc, char const *argv[]) {
     struct sockaddr_in serv_addr;
     char *server_ip = "127.0.0.1";
 
+    if (argc > 1) {
+        server_ip = (char *)argv[1]; // Use user-provided server IP if available
+    }
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         error("Socket creation error");
 
