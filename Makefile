@@ -2,9 +2,6 @@ CC = gcc
 CFLAGS = -std=c11 -Wall
 LDFLAGS =
 
-SRCDIR = src
-BINDIR = bin
-
 SERVER_SRC = server.c
 CLIENT_SRC = client.c
 
@@ -29,7 +26,7 @@ $(CLIENT_OBJ): $(CLIENT_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(BINDIR)/*.o $(SERVER_BIN) $(CLIENT_BIN)
+	rm -f *.o $(SERVER_BIN) $(CLIENT_BIN)
 
 .PHONY: all clean
 
