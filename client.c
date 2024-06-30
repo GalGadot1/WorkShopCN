@@ -22,6 +22,10 @@ void measure_throughput(int sock, int message_size, int num_messages) {
     struct timespec start, end;
     long total_bytes = 0;
 
+    /*
+    We chose warm up factor of 1000 by trying different numbers, and take the minimal number
+    where the rest of the throughput seems to stabilize.
+     */
     for (int i = 0; i < WARM_UP_FACTOR; i++) {
         send(sock, message, message_size, 0);
     }
