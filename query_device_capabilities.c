@@ -12,7 +12,7 @@ int main() {
     struct ibv_qp *qp;
     struct ibv_qp_init_attr qp_init_attr = {0};
     int max_inline_data;
-    int step = 64; // Increment step for max_inline_data
+    int step = 1; // Increment step for max_inline_data
     int ret;
 
     // Get the list of available devices
@@ -59,7 +59,7 @@ int main() {
     qp_init_attr.qp_type = IBV_QPT_RC;
 
     // Start with a reasonable max_inline_data value and increment to find the maximum
-    for (max_inline_data = step; max_inline_data <= 8192; max_inline_data += step) {
+    for (max_inline_data = 768; max_inline_data <= 832; max_inline_data += step) {
         qp_init_attr.cap.max_inline_data = max_inline_data;
 
         qp = ibv_create_qp(pd, &qp_init_attr);
