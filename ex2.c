@@ -1,84 +1,118 @@
-//
-// Created by Daniel Ben Naim on 05/07/2024.
-//
-#include <infiniband/verbs.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <infiniband/verbs.h>
 #include <string.h>
 #include <time.h>
 
-#define MSG_SIZE 1024
+// Define constants and global variables
+#define SERVER_PORT 18515
+#define BUFFER_SIZE 1024
 
-// Helper function for high-resolution timing
-static inline uint64_t get_time_ns() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+struct ibv_device **dev_list;
+struct ibv_context *ctx;
+struct ibv_pd *pd;
+struct ibv_mr *mr;
+struct ibv_cq *cq;
+struct ibv_qp *qp;
+struct ibv_comp_channel *comp_channel;
+char *buffer;
+int num_devices;
+
+void setup_verbs() {
+    // Obtain the list of devices
+    dev_list = ibv_get_device_list(&num_devices);
+    if (!dev_list) {
+        perror("Failed to get IB devices list");
+        exit(1);
+    }
+
+    // Open the device context
+    ctx = ibv_open_device(dev_list[0]);
+    if (!ctx) {
+        perror("Failed to open device");
+        exit(1);
+    }
+
+    // Allocate a Protection Domain (PD)
+    pd = ibv_alloc_pd(ctx);
+    if (!pd) {
+        perror("Failed to allocate PD");
+        exit(1);
+    }
+
+    // Allocate memory for the buffer
+    buffer = malloc(BUFFER_SIZE);
+    if (!buffer) {
+        perror("Failed to allocate memory");
+        exit(1);
+    }
+
+    // Register the memory region
+    mr = ibv_reg_mr(pd, buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE);
+    if (!mr) {
+        perror("Failed to register memory region");
+        exit(1);
+    }
+
+    // Create the Completion Queue (CQ)
+    cq = ibv_create_cq(ctx, 1, NULL, NULL, 0);
+    if (!cq) {
+        perror("Failed to create CQ");
+        exit(1);
+    }
+
+    // Create the Queue Pair (QP)
+    struct ibv_qp_init_attr qp_init_attr = {
+            .send_cq = cq,
+            .recv_cq = cq,
+            .cap     = {
+                    .max_send_wr  = 1,
+                    .max_recv_wr  = 1,
+                    .max_send_sge = 1,
+                    .max_recv_sge = 1,
+                    .max_inline_data = BUFFER_SIZE,
+            },
+            .qp_type = IBV_QPT_RC,
+    };
+
+    qp = ibv_create_qp(pd, &qp_init_attr);
+    if (!qp) {
+        perror("Failed to create QP");
+        exit(1);
+    }
+
+    // Set the QP state to INIT
+    struct ibv_qp_attr qp_attr = {
+            .qp_state        = IBV_QPS_INIT,
+            .pkey_index      = 0,
+            .port_num        = 1,
+            .qp_access_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE,
+    };
+
+    if (ibv_modify_qp(qp, &qp_attr,
+                      IBV_QP_STATE | IBV_QP_PKEY_INDEX |
+                      IBV_QP_PORT | IBV_QP_ACCESS_FLAGS)) {
+        perror("Failed to modify QP to INIT");
+        exit(1);
+    }
+}
+
+void cleanup_verbs() {
+    ibv_destroy_qp(qp);
+    ibv_destroy_cq(cq);
+    ibv_dereg_mr(mr);
+    free(buffer);
+    ibv_dealloc_pd(pd);
+    ibv_close_device(ctx);
+    ibv_free_device_list(dev_list);
 }
 
 int main(int argc, char *argv[]) {
-    // Initialization and resource allocation (context, PD, CQ, etc.)
-    // Code for creating QP, registering memory, and setting up the RDMA communication
+    setup_verbs();
 
-    struct ibv_context *ctx;
-    struct ibv_pd *pd;
-    struct ibv_cq *cq;
-    struct ibv_qp *qp;
-    struct ibv_mr *mr;
-    char *buf;
-    int num_conns = 1;
-
-    // Allocate memory for the message
-    posix_memalign((void **)&buf, 4096, MSG_SIZE);
-
-    // Setup the RDMA resources and connections here
+    // Implement the main logic for RDMA WRITE and IBV_WR_SEND
     // ...
 
-    // Measure throughput
-    uint64_t start_time = get_time_ns();
-    for (int i = 0; i < num_conns; i++) {
-        struct ibv_sge sge;
-        struct ibv_send_wr wr, *bad_wr;
-
-        // Setup the scatter-gather entry
-        sge.addr = (uintptr_t)buf;
-        sge.length = MSG_SIZE;
-        sge.lkey = mr->lkey;
-
-        // Setup the send work request
-        memset(&wr, 0, sizeof(wr));
-        wr.wr_id = i;
-        wr.opcode = IBV_WR_RDMA_WRITE;
-        wr.send_flags = IBV_SEND_SIGNALED;
-        wr.sg_list = &sge;
-        wr.num_sge = 1;
-        wr.wr.rdma.remote_addr = remote_addr; // Remote address
-        wr.wr.rdma.rkey = remote_rkey;        // Remote key
-
-        // Post the send request
-        if (ibv_post_send(qp, &wr, &bad_wr)) {
-            fprintf(stderr, "Error, ibv_post_send() failed\n");
-            exit(1);
-        }
-
-        // Wait for completion
-        struct ibv_wc wc;
-        while (ibv_poll_cq(cq, 1, &wc) == 0) {
-            // Polling for completion
-        }
-        if (wc.status != IBV_WC_SUCCESS) {
-            fprintf(stderr, "Error, completion status is %d\n", wc.status);
-            exit(1);
-        }
-    }
-    uint64_t end_time = get_time_ns();
-
-    // Calculate throughput
-    double throughput = (double)(MSG_SIZE * num_conns) / ((end_time - start_time) / 1000000000.0);
-    printf("Throughput: %f MB/s\n", throughput / (1024 * 1024));
-
-    // Clean up and release resources
-    // ...
-
+    cleanup_verbs();
     return 0;
 }
