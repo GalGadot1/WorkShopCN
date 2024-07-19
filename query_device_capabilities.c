@@ -1,52 +1,19 @@
-//
-// Created by Daniel Ben Naim on 19/07/2024.
-//
 #include <infiniband/verbs.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define MAX_INLINE 256  // Example value, should be less than device_attr.max_inline_data
-
-struct rdma_context {
-    struct ibv_context *ctx;
-    struct ibv_pd *pd;
-    struct ibv_cq *cq;
-    struct ibv_qp *qp;
-};
-
-struct rdma_context *init_context(struct ibv_context *verbs, int max_inline_data) {
-    struct rdma_context *ctx = (struct rdma_context *)malloc(sizeof(struct rdma_context));
-    ctx->ctx = verbs;
-    ctx->pd = ibv_alloc_pd(ctx->ctx);
-    ctx->cq = ibv_create_cq(ctx->ctx, 16, NULL, NULL, 0);
-
-    struct ibv_qp_init_attr qp_attr = {
-            .send_cq = ctx->cq,
-            .recv_cq = ctx->cq,
-            .cap = {
-                    .max_send_wr = 1,
-                    .max_recv_wr = 1,
-                    .max_send_sge = 1,
-                    .max_recv_sge = 1,
-                    .max_inline_data = max_inline_data
-            },
-            .qp_type = IBV_QPT_RC
-    };
-
-    ctx->qp = ibv_create_qp(ctx->pd, &qp_attr);
-    if (!ctx->qp) {
-        perror("Failed to create QP");
-        exit(1);
-    }
-
-    return ctx;
-}
+#include <string.h>
 
 int main() {
     struct ibv_device **dev_list;
     struct ibv_device *ib_dev;
     struct ibv_context *ctx;
-    struct ibv_device_attr device_attr;
+    struct ibv_pd *pd;
+    struct ibv_cq *cq;
+    struct ibv_qp *qp;
+    struct ibv_qp_init_attr qp_init_attr = {0};
+    int max_inline_data;
+    int step = 64; // Increment step for max_inline_data
+    int ret;
 
     // Get the list of available devices
     dev_list = ibv_get_device_list(NULL);
@@ -68,21 +35,51 @@ int main() {
         return 1;
     }
 
-    // Query device attributes
-    if (ibv_query_device(ctx, &device_attr)) {
-        perror("Failed to query device attributes");
+    // Allocate Protection Domain (PD)
+    pd = ibv_alloc_pd(ctx);
+    if (!pd) {
+        perror("Failed to allocate PD");
         return 1;
     }
 
-    // Initialize RDMA context with the max inline data size
-    struct rdma_context *rdma_ctx = init_context(ctx, device_attr.max_inline_data);
+    // Create Completion Queue (CQ)
+    cq = ibv_create_cq(ctx, 16, NULL, NULL, 0);
+    if (!cq) {
+        perror("Failed to create CQ");
+        return 1;
+    }
 
-    // Clean up
+    // Initialize QP attributes
+    qp_init_attr.send_cq = cq;
+    qp_init_attr.recv_cq = cq;
+    qp_init_attr.cap.max_send_wr = 1;
+    qp_init_attr.cap.max_recv_wr = 1;
+    qp_init_attr.cap.max_send_sge = 1;
+    qp_init_attr.cap.max_recv_sge = 1;
+    qp_init_attr.qp_type = IBV_QPT_RC;
+
+    // Start with a reasonable max_inline_data value and increment to find the maximum
+    for (max_inline_data = step; max_inline_data <= 8192; max_inline_data += step) {
+        qp_init_attr.cap.max_inline_data = max_inline_data;
+
+        qp = ibv_create_qp(pd, &qp_init_attr);
+        if (qp) {
+            printf("Successfully created QP with max_inline_data = %d bytes\n", max_inline_data);
+            ibv_destroy_qp(qp);  // Clean up QP if created successfully
+        } else {
+            printf("Failed to create QP with max_inline_data = %d bytes\n", max_inline_data);
+            max_inline_data -= step;  // Step back to the last successful value
+            break;
+        }
+    }
+
+    printf("Maximum supported max_inline_data size: %d bytes\n", max_inline_data);
+
+    // Cleanup
+    ibv_destroy_cq(cq);
+    ibv_dealloc_pd(pd);
     ibv_close_device(ctx);
     ibv_free_device_list(dev_list);
 
-    // Further code to use the rdma_ctx...
-
     return 0;
 }
-
