@@ -1,32 +1,28 @@
+# Makefile for RDMA Performance Measurements
+
 CC = gcc
-CFLAGS = -std=c11 -Wall
-LDFLAGS =
+CFLAGS = -Wall -O2
+LDFLAGS = -libverbs
 
-SERVER_SRC = server.c
-CLIENT_SRC = client.c
+# Source files
+SRC = bw_template.c
 
-SERVER_OBJ = server.o
-CLIENT_OBJ = client.o
-
-SERVER_BIN = server
-CLIENT_BIN = client
-
-all: $(SERVER_BIN) $(CLIENT_BIN)
-
-$(SERVER_BIN): $(SERVER_OBJ)
-	$(CC) $(LDFLAGS) $^ -o $@
-
-$(CLIENT_BIN): $(CLIENT_OBJ)
-	$(CC) $(LDFLAGS) $^ -o $@
-
-$(SERVER_OBJ): $(SERVER_SRC)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(CLIENT_OBJ): $(CLIENT_SRC)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-clean:
-	rm -f *.o $(SERVER_BIN) $(CLIENT_BIN)
+# Targets
+TARGETS = server client
 
 .PHONY: all clean
 
+# Default target
+all: $(TARGETS)
+
+# Build server
+server: $(SRC)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Create client as a symlink to server
+client: server
+	ln -sf server client
+
+# Clean up build files
+clean:
+	rm -f $(TARGETS) client
