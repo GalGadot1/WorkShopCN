@@ -31,6 +31,8 @@
  * SOFTWARE.
  */
 
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +50,6 @@
 
 #include <infiniband/verbs.h>
 
-#define _GNU_SOURCE
 #define WC_BATCH (10)
 
 enum {
