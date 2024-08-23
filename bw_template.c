@@ -811,16 +811,19 @@ int main(int argc, char *argv[])
     if (servername) {
         int i = 0;
         int outstanding_sends = 0;
+        size_t total_bytes = 0;
+        struct timespec start, end;
 
+        clock_gettime(CLOCK_MONOTONIC, &start);
         while (i < iters || outstanding_sends > 0) {
             if (outstanding_sends < tx_depth && i < iters) {
                 // Post a new send request if there are available slots
-		        printf("send\n");
                 if (pp_post_send(ctx)) {
                     fprintf(stderr, "Client couldn't post send\n");
                     return 1;
                 }
                 outstanding_sends++;
+                total_bytes += ctx->size;
                 i++;
             }
 
@@ -838,7 +841,6 @@ int main(int argc, char *argv[])
                         wc.status, (int) wc.wr_id);
             	    return 1;
         	    }
-    	        printf("complete");
                 outstanding_sends--;  // Decrement outstanding sends on completion
     	    }
         }
@@ -858,10 +860,16 @@ int main(int argc, char *argv[])
                         wc.status, (int) wc.wr_id);
                     return 1;
                 }
-                printf("complete");
                 outstanding_sends--;  // Decrement outstanding sends on completion
             }
         }
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        double time_taken = (end.tv_sec - start.tv_sec) * 1e9;
+        time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+
+        double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
+        printf("%d\t%f\tGb/s\n", ctx->size, throughput / 1000 * 8);
 
         printf("Client Done.\n");
     } else {
