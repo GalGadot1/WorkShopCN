@@ -545,6 +545,7 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
 {
     int rcnt = 0, scnt = 0;
     while (rcnt + scnt < iters) {
+        printf("hola como estas");
         struct ibv_wc wc[WC_BATCH];
         int ne, i;
 
