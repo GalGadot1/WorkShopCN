@@ -809,68 +809,54 @@ int main(int argc, char *argv[])
             return 1;
 
     if (servername) {
-        int i = 0;
-        int outstanding_sends = 0;
-        size_t total_bytes = 0;
-        struct timespec start, end;
+        int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
+        int num_messages = 10000; // Number of messages to send
 
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        while (i < iters || outstanding_sends > 0) {
-            if (outstanding_sends < tx_depth && i < iters) {
-                // Post a new send request if there are available slots
-                if (pp_post_send(ctx)) {
-                    fprintf(stderr, "Client couldn't post send\n");
-                    return 1;
+        for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
+            ctx->size = msg_ind;
+            int i = 0;
+            int outstanding_sends = 0;
+            size_t total_bytes = 0;
+            struct timespec start, end;
+
+            clock_gettime(CLOCK_MONOTONIC, &start);
+            while (i < iters || outstanding_sends > 0) {
+                if (outstanding_sends < tx_depth && i < iters) {
+                    // Post a new send request if there are available slots
+                    if (pp_post_send(ctx)) {
+                        fprintf(stderr, "Client couldn't post send\n");
+                        return 1;
+                    }
+                    outstanding_sends++;
+                    total_bytes += ctx->size;
+                    i++;
                 }
-                outstanding_sends++;
-                total_bytes += ctx->size;
-                i++;
-            }
 
-            struct ibv_wc wc;
-            int ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                struct ibv_wc wc;
+                int ne = ibv_poll_cq(ctx->cq, 1, &wc);
 
-    	    if (ne < 0) {
-            	fprintf(stderr, "Polling failed\n");
-        	    return 1;
-    	    } else if (ne > 0) {
-                // We have a completion to handle
-                if (wc.status != IBV_WC_SUCCESS) {
-            	    fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                        ibv_wc_status_str(wc.status),
-                        wc.status, (int) wc.wr_id);
-            	    return 1;
-        	    }
-                outstanding_sends--;  // Decrement outstanding sends on completion
-    	    }
-        }
-
-        while(outstanding_sends > 0) {
-            struct ibv_wc wc;
-            int ne = ibv_poll_cq(ctx->cq, 1, &wc);
-
-            if (ne < 0) {
-                fprintf(stderr, "Polling failed\n");
-                return 1;
-            } else if (ne > 0) {
-                // We have a completion to handle
-                if (wc.status != IBV_WC_SUCCESS) {
-                    fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                        ibv_wc_status_str(wc.status),
-                        wc.status, (int) wc.wr_id);
+                if (ne < 0) {
+                    fprintf(stderr, "Polling failed\n");
                     return 1;
+                } else if (ne > 0) {
+                    // We have a completion to handle
+                    if (wc.status != IBV_WC_SUCCESS) {
+                        fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                            ibv_wc_status_str(wc.status),
+                            wc.status, (int) wc.wr_id);
+                        return 1;
+                    }
+                    outstanding_sends--;  // Decrement outstanding sends on completion
                 }
-                outstanding_sends--;  // Decrement outstanding sends on completion
             }
+            clock_gettime(CLOCK_MONOTONIC, &end);
+
+            double time_taken = (end.tv_sec - start.tv_sec) * 1e9;
+            time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+
+            double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
+            printf("%d\t%f\tGb/s\n", ctx->size, throughput / 1000 * 8);
         }
-        clock_gettime(CLOCK_MONOTONIC, &end);
-
-        double time_taken = (end.tv_sec - start.tv_sec) * 1e9;
-        time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-
-        double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
-        printf("%d\t%f\tGb/s\n", ctx->size, throughput / 1000 * 8);
-
         printf("Client Done.\n");
     } else {
         if (pp_post_send(ctx)) {
