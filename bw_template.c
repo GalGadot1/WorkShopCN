@@ -48,6 +48,7 @@
 
 #include <infiniband/verbs.h>
 
+#define _GNU_SOURCE
 #define WC_BATCH (10)
 
 enum {
