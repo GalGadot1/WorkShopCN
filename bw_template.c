@@ -813,7 +813,7 @@ int main(int argc, char *argv[])
         int num_messages = 10000; // Number of messages to send
 
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
-            ctx->size = msg_ind;
+            ctx->size = message_sizes[msg_ind];
             int i = 0;
             int outstanding_sends = 0;
             size_t total_bytes = 0;
