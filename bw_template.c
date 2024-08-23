@@ -529,25 +529,18 @@ static int pp_post_send(struct pingpong_context *ctx)
             .lkey	= ctx->mr->lkey
     };
 
+    int flags = IBV_SEND_SIGNALED;
     if(ctx->size < 829) {
-        struct ibv_send_wr *bad_wr, wr = {
-                .wr_id	    = PINGPONG_SEND_WRID,
-                .sg_list    = &list,
-                .num_sge    = 1,
-                .opcode     = IBV_WR_SEND,
-                .send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE,
-                .next       = NULL
-        };
-    } else {
-        struct ibv_send_wr *bad_wr, wr = {
-            .wr_id	    = PINGPONG_SEND_WRID,
-            .sg_list    = &list,
-            .num_sge    = 1,
-            .opcode     = IBV_WR_SEND,
-            .send_flags = IBV_SEND_SIGNALED,
-            .next       = NULL
-        };
+        flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
     }
+    struct ibv_send_wr *bad_wr, wr = {
+        .wr_id	    = PINGPONG_SEND_WRID,
+        .sg_list    = &list,
+        .num_sge    = 1,
+        .opcode     = IBV_WR_SEND,
+        .send_flags = IBV_SEND_SIGNALED,
+        .next       = NULL
+    };
 
     return ibv_post_send(ctx->qp, &wr, &bad_wr);
 }
@@ -638,7 +631,7 @@ int main(int argc, char *argv[])
     enum ibv_mtu             mtu = IBV_MTU_2048;
     int                      rx_depth = 100;
     int                      tx_depth = 100;
-    int                      iters = 1000;
+    int                      iters = 10000;
     int                      use_event = 0;
     int                      size = 1048576;
     int                      sl = 0;
