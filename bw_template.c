@@ -545,7 +545,6 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
 {
     int rcnt = 0, scnt = 0;
     while (rcnt + scnt < iters) {
-        printf("hola como estas");
         struct ibv_wc wc[WC_BATCH];
         int ne, i;
 
@@ -810,16 +809,29 @@ int main(int argc, char *argv[])
             return 1;
 
     if (servername) {
-        int i;
-        for (i = 0; i < iters; i++) {
-            if ((i != 0) && (i % tx_depth == 0)) {
-                pp_wait_completions(ctx, tx_depth);
+        int i = 0;
+        int outstanding_sends = 0;
+
+        while (i < iters || outstanding_sends > 0) {
+            if (outstanding_sends < tx_depth && i < iters) {
+                // Post a new send request if there are available slots
+                if (pp_post_send(ctx)) {
+                    fprintf(stderr, "Client couldn't post send\n");
+                    return 1;
+                }
+                outstanding_sends++;
+                i++;
             }
-            if (pp_post_send(ctx)) {
-                fprintf(stderr, "Client ouldn't post send\n");
+
+            // Poll for completions to free up slots
+            int completions = pp_wait_completions(ctx, 1); // Poll for a single completion
+            if (completions < 0) {
+                fprintf(stderr, "Error while polling for completions\n");
                 return 1;
             }
+            outstanding_sends -= completions;
         }
+
         printf("Client Done.\n");
     } else {
         if (pp_post_send(ctx)) {
