@@ -369,6 +369,8 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
     if (!ctx)
         return NULL;
 
+    printf(size);
+
     ctx->size     = size;
     ctx->rx_depth = rx_depth;
     ctx->routs    = rx_depth;
@@ -859,7 +861,6 @@ int main(int argc, char *argv[])
 
             double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
             printf("%d\t%f\tGb/s\n", message_sizes[msg_ind], throughput / 1000 * 8);
-            sleep(1);
         }
         printf("Client Done.\n");
     } else {
