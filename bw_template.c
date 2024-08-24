@@ -814,10 +814,13 @@ int main(int argc, char *argv[])
 
     if (servername) {
         int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
-        int num_messages = 10000; // Number of messages to send
 
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
-            ctx->size = message_sizes[msg_ind];
+            ctx->buf = realloc(ctx->buf, message_sizes[msg_ind]);
+            if (!ctx->buf) {
+                fprintf(stderr, "Failed to allocate buffer\n");
+                return 1;
+            }
             int i = 0;
             int outstanding_sends = 0;
             size_t total_bytes = 0;
@@ -832,7 +835,7 @@ int main(int argc, char *argv[])
                         return 1;
                     }
                     outstanding_sends++;
-                    total_bytes += ctx->size;
+                    total_bytes += message_sizes[msg_ind];
                     i++;
                 }
 
@@ -859,7 +862,7 @@ int main(int argc, char *argv[])
             time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
 
             double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
-            printf("%d\t%f\tGb/s\n", ctx->size, throughput / 1000 * 8);
+            printf("%d\t%f\tGb/s\n", message_sizes[msg_ind], throughput / 1000 * 8);
         }
         printf("Client Done.\n");
     } else {
