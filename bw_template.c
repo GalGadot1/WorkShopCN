@@ -521,11 +521,11 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     return i;
 }
 
-static int pp_post_send(struct pingpong_context *ctx, uint32_t message_size)
+static int pp_post_send(struct pingpong_context *ctx)
 {
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
-            .length = message_size,
+            .length = ctx->size,
             .lkey	= ctx->mr->lkey
     };
 
@@ -820,12 +820,13 @@ int main(int argc, char *argv[])
             int outstanding_sends = 0;
             size_t total_bytes = 0;
             struct timespec start, end;
+            ctx->size = message_sizes[msg_ind];
 
             clock_gettime(CLOCK_MONOTONIC, &start);
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
                     // Post a new send request if there are available slots
-                    if (pp_post_send(ctx, message_sizes[msg_ind])) {
+                    if (pp_post_send(ctx) {
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
