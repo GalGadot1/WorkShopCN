@@ -369,8 +369,6 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
     if (!ctx)
         return NULL;
 
-    printf(size);
-
     ctx->size     = size;
     ctx->rx_depth = rx_depth;
     ctx->routs    = rx_depth;
