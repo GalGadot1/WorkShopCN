@@ -826,7 +826,7 @@ int main(int argc, char *argv[])
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
                     // Post a new send request if there are available slots
-                    if (pp_post_send(ctx) {
+                    if (pp_post_send(ctx)) {
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
