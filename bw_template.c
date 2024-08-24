@@ -521,11 +521,11 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     return i;
 }
 
-static int pp_post_send(struct pingpong_context *ctx)
+static int pp_post_send(struct pingpong_context *ctx, uint32_t message_size)
 {
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
-            .length = ctx->size,
+            .length = message_size,
             .lkey	= ctx->mr->lkey
     };
 
@@ -816,11 +816,6 @@ int main(int argc, char *argv[])
         int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
 
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
-            ctx->buf = realloc(ctx->buf, message_sizes[msg_ind]);
-            if (!ctx->buf) {
-                fprintf(stderr, "Failed to allocate buffer\n");
-                return 1;
-            }
             int i = 0;
             int outstanding_sends = 0;
             size_t total_bytes = 0;
@@ -830,7 +825,7 @@ int main(int argc, char *argv[])
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
                     // Post a new send request if there are available slots
-                    if (pp_post_send(ctx)) {
+                    if (pp_post_send(ctx, message_sizes[msg_ind])) {
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
@@ -863,6 +858,7 @@ int main(int argc, char *argv[])
 
             double throughput = (total_bytes / time_taken) / (1024 * 1024); // MB/s
             printf("%d\t%f\tGb/s\n", message_sizes[msg_ind], throughput / 1000 * 8);
+            sleep(1);
         }
         printf("Client Done.\n");
     } else {
