@@ -814,8 +814,9 @@ int main(int argc, char *argv[])
         if (pp_connect_ctx(ctx, ib_port, my_dest.psn, mtu, sl, rem_dest, gidx))
             return 1;
 
+    int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
+
     if (servername) {
-        int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
 
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
             int i = 0;
@@ -864,12 +865,59 @@ int main(int argc, char *argv[])
         }
         printf("Client Done.\n");
     } else {
-        if (pp_post_send(ctx)) {
-            fprintf(stderr, "Server couldn't post send\n");
-            return 1;
+        // This is the server code
+        int total_receives = 0;
+        int expected_receives = iters * sizeof(message_sizes) / sizeof(message_sizes[0]);
+
+        while (total_receives < expected_receives) {
+            // Post a receive
+            if (pp_post_recv(ctx, 1) != 1) {
+                fprintf(stderr, "Couldn't post receive\n");
+                return 1;
+            }
+
+            // Wait for completion
+            struct ibv_wc wc;
+            int ne;
+            do {
+                ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                if (ne < 0) {
+                    fprintf(stderr, "Poll CQ failed %d\n", ne);
+                    return 1;
+                }
+            } while (ne < 1);
+
+            if (wc.status != IBV_WC_SUCCESS) {
+                fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                        ibv_wc_status_str(wc.status),
+                        wc.status, (int) wc.wr_id);
+                return 1;
+            }
+
+            if (wc.opcode == IBV_WC_RECV) {
+                total_receives++;
+
+                // Optionally, print progress
+                if (total_receives % 1000 == 0) {
+                    printf("Server: Received %d out of %d messages\n",
+                           total_receives, expected_receives);
+                }
+
+                // Post a send to acknowledge the receive
+                if (pp_post_send(ctx)) {
+                    fprintf(stderr, "Couldn't post send\n");
+                    return 1;
+                }
+            }
         }
-        pp_wait_completions(ctx, iters);
-        printf("Server Done.\n");
+        printf("Server: All %d messages received. Done.\n", total_receives);
+
+        // if (pp_post_send(ctx)) {
+        //     fprintf(stderr, "Server couldn't post send\n");
+        //     return 1;
+        // }
+        // pp_wait_completions(ctx, iters);
+        // printf("Server Done.\n");
     }
 
     ibv_free_device_list(dev_list);
