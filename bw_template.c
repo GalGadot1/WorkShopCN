@@ -868,12 +868,6 @@ int main(int argc, char *argv[])
         int expected_receives = iters * sizeof(message_sizes) / sizeof(message_sizes[0]);
 
         while (total_receives < expected_receives) {
-            // Post a receive
-            if (pp_post_recv(ctx, 1) != 1) {
-                fprintf(stderr, "Couldn't post receive\n");
-                return 1;
-            }
-
             // Wait for completion
             struct ibv_wc wc;
             int ne;
@@ -894,6 +888,17 @@ int main(int argc, char *argv[])
 
             if (wc.opcode == IBV_WC_RECV) {
                 total_receives++;
+                ctx->routs--;
+
+                // Replenish receives if we're running low
+                if (ctx->routs <= 10) {
+                    int routs = pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
+                    ctx->routs += routs;
+                    if (routs != ctx->rx_depth - ctx->routs) {
+                        fprintf(stderr, "Couldn't post receive (%d)\n", routs);
+                        return 1;
+                    }
+                }
 
                 // Optionally, print progress
                 if (total_receives % 1000 == 0) {
@@ -909,7 +914,6 @@ int main(int argc, char *argv[])
             }
         }
         printf("Server: All %d messages received. Done.\n", total_receives);
-
         // if (pp_post_send(ctx)) {
         //     fprintf(stderr, "Server couldn't post send\n");
         //     return 1;
