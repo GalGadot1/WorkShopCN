@@ -831,9 +831,6 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
-                    if (ctx->size > 32) {
-                        usleep(100);  // 100 microseconds delay for messages > 32 bytes
-                    }
                     outstanding_sends++;
                     total_bytes += message_sizes[msg_ind];
                     i++;
@@ -866,15 +863,22 @@ int main(int argc, char *argv[])
         }
         printf("Client Done.\n");
     } else {
-        int counter = 0;
-        while (counter < sizeof(message_sizes)) {
-            if (pp_post_send(ctx)) {
-                fprintf(stderr, "Server couldn't post send\n");
-                return 1;
+        for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
+            int outstanding_sends = 0;
+            int i = 0;
+
+            while (i < iters || outstanding_sends > 0) {
+                if (outstanding_sends < rx_depth && i < iters) {
+                    if (pp_post_send(ctx)) {
+                        fprintf(stderr, "Server couldn't post send\n");
+                        return 1;
+                    }
+                    outstanding_sends++;
+                    i++;
+                    pp_wait_completions(ctx, iters);
+                }
             }
-            pp_wait_completions(ctx, iters);
-            printf("Server finshed iteration: %d, with message of size: %d.\n", counter, message_sizes[counter]);
-            counter++;
+            printf("Server finshed iteration: %d, with message of size: %d.\n", msg_ind, message_sizes[countmsg_inder]);
         }
     }
 
