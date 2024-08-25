@@ -831,6 +831,9 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
+                    if (ctx->size > 32) {
+                        usleep(100);  // 100 microseconds delay for messages > 32 bytes
+                    }
                     outstanding_sends++;
                     total_bytes += message_sizes[msg_ind];
                     i++;
@@ -863,46 +866,6 @@ int main(int argc, char *argv[])
         }
         printf("Client Done.\n");
     } else {
-        // int total_receives = 0;
-        // int expected_receives = iters * sizeof(message_sizes) / sizeof(message_sizes[0]);
-        //
-        // while (total_receives < expected_receives) {
-        //     // Wait for completion
-        //     struct ibv_wc wc;
-        //     int ne;
-        //     do {
-        //         ne = ibv_poll_cq(ctx->cq, 1, &wc);
-        //         if (ne < 0) {
-        //             fprintf(stderr, "Poll CQ failed %d\n", ne);
-        //             return 1;
-        //         }
-        //     } while (ne < 1);
-        //
-        //     if (wc.status != IBV_WC_SUCCESS) {
-        //         fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-        //                 ibv_wc_status_str(wc.status),
-        //                 wc.status, (int) wc.wr_id);
-        //         return 1;
-        //     }
-        //
-        //     if (wc.opcode == IBV_WC_RECV) {
-        //         total_receives++;
-        //         ctx->routs--;
-        //
-        //         // Optionally, print progress
-        //         if (total_receives % 1000 == 0) {
-        //             printf("Server: Received %d out of %d messages\n",
-        //                    total_receives, expected_receives);
-        //         }
-        //
-        //         // Post a send to acknowledge the receive
-        //         if (pp_post_send(ctx)) {
-        //             fprintf(stderr, "Couldn't post send\n");
-        //             return 1;
-        //         }
-        //     }
-        // }
-        // printf("Server: All %d messages received. Done.\n", total_receives);
         int counter = 0;
         while (counter < sizeof(message_sizes)) {
             if (pp_post_send(ctx)) {
@@ -910,7 +873,7 @@ int main(int argc, char *argv[])
                 return 1;
             }
             pp_wait_completions(ctx, iters);
-            printf("Server Done.\n");
+            printf("Server finshed iteration: %d, with message of size: %d.\n", counter, message_sizes[counter]);
             counter++;
         }
     }
