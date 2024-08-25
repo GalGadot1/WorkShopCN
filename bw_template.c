@@ -885,8 +885,8 @@ int main(int argc, char *argv[])
         int expected_receives = iters * sizeof(message_sizes) / sizeof(message_sizes[0]);
 
         // Post initial receives
-        int posted = pp_post_recv(ctx, ctx->rx_depth);
-        if (posted < ctx->rx_depth) {
+        int posted = pp_post_recv(ctx, 10);
+        if (posted < 10) {
             fprintf(stderr, "Couldn't post initial receives (%d/%d)\n", posted, ctx->rx_depth);
             return 1;
         }
@@ -916,8 +916,8 @@ int main(int argc, char *argv[])
                 ctx->routs--;
 
                 // Replenish receives if we're running low
-                if (ctx->routs <= ctx->rx_depth / 2) {
-                    int to_post = ctx->rx_depth - ctx->routs;
+                if (ctx->routs <= 10) {
+                    int to_post = 10 - ctx->routs;
                     int posted = pp_post_recv(ctx, to_post);
                     ctx->routs += posted;
                     if (posted < to_post) {
