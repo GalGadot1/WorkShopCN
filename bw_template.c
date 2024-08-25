@@ -878,7 +878,7 @@ int main(int argc, char *argv[])
                     pp_wait_completions(ctx, iters);
                 }
             }
-            printf("Server finshed iteration: %d, with message of size: %d.\n", msg_ind, message_sizes[countmsg_inder]);
+            printf("Server finshed iteration: %d, with message of size: %d.\n", msg_ind, message_sizes[msg_ind]);
         }
     }
 
