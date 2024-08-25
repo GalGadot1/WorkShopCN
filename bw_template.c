@@ -424,7 +424,8 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
                         .max_send_wr  = tx_depth,
                         .max_recv_wr  = rx_depth,
                         .max_send_sge = 1,
-                        .max_recv_sge = 1
+                        .max_recv_sge = 1,
+                        .max_inline_data = 828
                 },
                 .qp_type = IBV_QPT_RC
         };
