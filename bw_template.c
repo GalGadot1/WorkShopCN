@@ -875,7 +875,24 @@ int main(int argc, char *argv[])
                     }
                     outstanding_sends++;
                     i++;
-                    pp_wait_completions(ctx, iters);
+                    // pp_wait_completions(ctx, iters);
+
+                    struct ibv_wc wc;
+                    int ne = ibv_poll_cq(ctx->cq, 1, &wc);
+
+                    if (ne < 0) {
+                        fprintf(stderr, "Polling failed\n");
+                        return 1;
+                    } else if (ne > 0) {
+                        // We have a completion to handle
+                        if (wc.status != IBV_WC_SUCCESS) {
+                            fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                                ibv_wc_status_str(wc.status),
+                                wc.status, (int) wc.wr_id);
+                            return 1;
+                        }
+                        outstanding_sends--;  // Decrement outstanding sends on completion
+                    }
                 }
             }
             printf("Server finshed iteration: %d, with message of size: %d.\n", msg_ind, message_sizes[msg_ind]);
