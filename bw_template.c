@@ -868,7 +868,7 @@ int main(int argc, char *argv[])
             int i = 0;
 
             while (i < iters || outstanding_sends > 0) {
-                if (outstanding_sends < rx_depth && i < iters) {
+                if (outstanding_sends < tx_depth && i < iters) {
                     if (pp_post_send(ctx)) {
                         fprintf(stderr, "Server couldn't post send\n");
                         return 1;
