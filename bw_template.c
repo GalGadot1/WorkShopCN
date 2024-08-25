@@ -890,16 +890,6 @@ int main(int argc, char *argv[])
                 total_receives++;
                 ctx->routs--;
 
-                // Replenish receives if we're running low
-                if (ctx->routs <= 10) {
-                    int routs = pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
-                    ctx->routs += routs;
-                    if (routs != ctx->rx_depth - ctx->routs) {
-                        fprintf(stderr, "Couldn't post receive (%d)\n", routs);
-                        return 1;
-                    }
-                }
-
                 // Optionally, print progress
                 if (total_receives % 1000 == 0) {
                     printf("Server: Received %d out of %d messages\n",
