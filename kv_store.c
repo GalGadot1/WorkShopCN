@@ -128,11 +128,18 @@ int kv_close(kv_handle_t *kv_handle) {
 
 void start_server() {
     int server_socket, client_socket;
+    int opt = 1;
+
     struct sockaddr_in server_addr, client_addr;
     pthread_t client_threads[MAX_CLIENTS];
     kv_handle_t kv_handles[MAX_CLIENTS];
 
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+        error("socket failed");
+
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+        error("setsockopt");
+
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
