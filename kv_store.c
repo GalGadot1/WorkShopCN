@@ -178,7 +178,7 @@ void start_client(char *hostname) {
     hints.ai_family = AF_INET;  // Use IPv4
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((status = getaddrinfo(hostname, "5002", &hints, &res)) != 0) {
+    if ((status = getaddrinfo(hostname, "11325", &hints, &res)) != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         error("Address resolution failed");
     }
