@@ -78,21 +78,19 @@ void* client_handler(void* arg) {
     while(1) {
         // Simulate receiving a SET request
         int valread = read(kv_handle->client_socket, key, MAX_KEY_LEN);
-        printf("server first read completed\n");
+        printf("server first read completed, val: %d\n", valread);
         if(valread <= 0) {
             close(kv_handle->client_socket);
             continue;
         }
         printf("server before second read\n");
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
-        printf("server second read completed\n");
-        printf("server 3, val: %d\n", valread);
+        printf("server second read completed, val: %d\n", valread);
 
         if (valread > 0) {
             printf("server before handle_set\n");
             handle_set(key, value);
-            printf("server handle_set completed\n");
-            printf("server 4, val: %d\n", valread);
+            printf("server handle_set completed, val: %d\n", valread);
         } else {
             printf("server before handle_get\n");
             char *retrieved_value = handle_get(key);
