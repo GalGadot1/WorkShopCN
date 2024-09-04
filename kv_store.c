@@ -82,7 +82,7 @@ void* client_handler(void* arg) {
         int valread = read(kv_handle->client_socket, key, MAX_KEY_LEN);
         if(valread <= 0) {
             close(kv_handle->client_socket);
-            continue;
+            return NULL;
         }
         printf("server 3, val: %d\n", valread);
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
