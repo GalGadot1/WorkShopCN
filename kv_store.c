@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <infiniband/verbs.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -10,7 +9,7 @@
 #define MAX_KEY_LEN 256
 #define MAX_VALUE_LEN 4096
 #define MAX_ENTRIES 1024
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 3
 #define PORT 11325
 
 void error(const char *msg) {
@@ -77,21 +76,27 @@ void* client_handler(void* arg) {
     char key[MAX_KEY_LEN];
     char value[MAX_VALUE_LEN];
     while(1) {
-        printf("server 2\n");
         // Simulate receiving a SET request
         int valread = read(kv_handle->client_socket, key, MAX_KEY_LEN);
+        printf("server first read completed\n");
         if(valread <= 0) {
             close(kv_handle->client_socket);
             continue;
         }
-        printf("server 3, val: %d\n", valread);
+        printf("server before second read\n");
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
+        printf("server second read completed\n");
+        printf("server 3, val: %d\n", valread);
 
         if (valread > 0) {
+            printf("server before handle_set\n");
             handle_set(key, value);
+            printf("server handle_set completed\n");
             printf("server 4, val: %d\n", valread);
         } else {
+            printf("server before handle_get\n");
             char *retrieved_value = handle_get(key);
+            printf("server handle_get completed\n");
             write(kv_handle->client_socket, retrieved_value, MAX_VALUE_LEN);
             printf("server 5, retrieved: %s,val: %d\n", retrieved_value, valread);
         }
