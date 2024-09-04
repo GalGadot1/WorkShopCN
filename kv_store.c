@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <fcntl.h>
 
 #define MAX_KEY_LEN 256
 #define MAX_VALUE_LEN 4096
@@ -75,6 +76,8 @@ void* client_handler(void* arg) {
     kv_handle_t *kv_handle = (kv_handle_t *)arg;
     char key[MAX_KEY_LEN];
     char value[MAX_VALUE_LEN];
+    // Set the socket to non-blocking mode
+    int flags = fcntl(kv_handle->client_socket, F_GETFL, 0);
     while(1) {
         // Simulate receiving a SET request
         int valread = read(kv_handle->client_socket, key, MAX_KEY_LEN);
@@ -84,7 +87,9 @@ void* client_handler(void* arg) {
             continue;
         }
         printf("server before second read\n");
+        fcntl(kv_handle->client_socket, F_SETFL, flags | O_NONBLOCK);
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
+        fcntl(kv_handle->client_socket, F_SETFL, flags & ~O_NONBLOCK);
         printf("server second read completed, val: %d\n", valread);
 
         if (valread > 0) {
