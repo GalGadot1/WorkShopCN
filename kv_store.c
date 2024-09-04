@@ -10,7 +10,7 @@
 #define MAX_KEY_LEN 256
 #define MAX_VALUE_LEN 4096
 #define MAX_ENTRIES 1024
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 10
 #define PORT 11325
 
 void error(const char *msg) {
@@ -93,7 +93,7 @@ void* client_handler(void* arg) {
         } else {
             char *retrieved_value = handle_get(key);
             write(kv_handle->client_socket, retrieved_value, MAX_VALUE_LEN);
-            printf("server 5,val: %d\n", valread);
+            printf("server 5, retrieved: %s,val: %d\n", retrieved_value, valread);
         }
     }
 }
