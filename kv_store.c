@@ -77,19 +77,23 @@ void* client_handler(void* arg) {
     char key[MAX_KEY_LEN];
     char value[MAX_VALUE_LEN];
     while(1) {
+        printf("server 2\n");
         // Simulate receiving a SET request
         int valread = read(kv_handle->client_socket, key, MAX_KEY_LEN);
         if(valread <= 0) {
             close(kv_handle->client_socket);
             return NULL;
         }
+        printf("server 3, val: %d\n", valread);
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
 
         if (valread > 0) {
             handle_set(key, value);
+            printf("server 4, val: %d\n", valread);
         } else {
             char *retrieved_value = handle_get(key);
             write(kv_handle->client_socket, retrieved_value, MAX_VALUE_LEN);
+            printf("server 4, val: %d\n", valread);
         }
     }
 }
@@ -152,6 +156,7 @@ void start_server() {
         error("listen");
 
     for (int i = 0; i < MAX_CLIENTS; i++) {
+        printf("server 1\n");
         socklen_t addr_size = sizeof(client_addr);
         if ((client_socket = accept(server_socket, (struct sockaddr *)&client_addr, (socklen_t*)&addr_size)) < 0)
             error("accept");
@@ -191,10 +196,13 @@ void start_client(char *hostname) {
 
     freeaddrinfo(res);  // Free the linked list
 
+    printf("client 1\n");
     kv_set(handle, "key1", "value1");
+    printf("client 2\n");
 
     char *value;
     kv_get(handle, "key1", &value);
+    printf("client 3\n");
     printf("Received value: %s\n", value);
 
     kv_release(value);
@@ -207,6 +215,5 @@ int main(int argc, char *argv[]) {
     } else {
         start_client(argv[1]);
     }
-
     return 0;
 }
