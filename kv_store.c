@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #define MAX_KEY_LEN 256
 #define MAX_VALUE_LEN 4096
@@ -165,23 +166,30 @@ void start_server() {
     close(server_socket);
 }
 
-void start_client(char *servername) {
+
+void start_client(char *hostname) {
     kv_handle_t *handle;
-    struct sockaddr_in server_addr;
+    struct addrinfo hints, *res;
+    int status;
 
-    kv_open(servername, &handle);
+    kv_open(hostname, &handle);
 
-    if ((handle->client_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;  // Use IPv4
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(hostname, "5002", &hints, &res)) != 0) {
+        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
+        error("Address resolution failed");
+    }
+
+    if ((handle->client_socket = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
         error("Socket creation error");
 
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-
-    if (inet_pton(AF_INET, servername, &server_addr.sin_addr) <= 0)
-        error("Invalid address/ Address not supported");
-
-    if (connect(handle->client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    if (connect(handle->client_socket, res->ai_addr, res->ai_addrlen) < 0)
         error("Connection Failed");
+
+    freeaddrinfo(res);  // Free the linked list
 
     kv_set(handle, "key1", "value1");
 
