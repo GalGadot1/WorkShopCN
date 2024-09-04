@@ -89,18 +89,18 @@ void* client_handler(void* arg) {
         fcntl(kv_handle->client_socket, F_SETFL, flags | O_NONBLOCK);
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
         fcntl(kv_handle->client_socket, F_SETFL, flags & ~O_NONBLOCK);
-        printf("server second read completed, val: %s\n", valread);
+        printf("server second read completed, val: %d\n", valread);
 
         if (valread > 0) {
             printf("server before handle_set\n");
             handle_set(key, value);
-            printf("server handle_set completed, val: %s\n", valread);
+            printf("server handle_set completed, val: %d\n", valread);
         } else {
             printf("server before handle_get\n");
             char *retrieved_value = handle_get(key);
             printf("server handle_get completed\n");
             write(kv_handle->client_socket, retrieved_value, MAX_VALUE_LEN);
-            printf("server 5, retrieved: %s,val: %s\n", retrieved_value, valread);
+            printf("server 5, retrieved: %s,val: %d\n", retrieved_value, valread);
         }
     }
 }
