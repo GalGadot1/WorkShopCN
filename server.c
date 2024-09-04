@@ -69,7 +69,6 @@ void handle_client(int client_sock, int message_size, int num_messages) {
     long total_bytes_received = 0;
     int messages_received = 0;
 
-    printf("server 1\n");
     if(message_size == 1) {
         while(total_bytes_received < WARM_UP_FACTOR) {
             ssize_t bytes_received = recv(client_sock, buffer, sizeof(buffer), 0);
@@ -79,9 +78,8 @@ void handle_client(int client_sock, int message_size, int num_messages) {
             }
             total_bytes_received += bytes_received;
         }
-        total_bytes_received = 0;
+        total_bytes_received = total_bytes_received - WARM_UP_FACTOR;
     }
-    printf("server 2\n");
 
     // Receive actual messages
     while (total_bytes_received < num_messages * message_size) {
@@ -92,7 +90,6 @@ void handle_client(int client_sock, int message_size, int num_messages) {
         }
         total_bytes_received += bytes_received;
     }
-    printf("server 3\n");
 
     // Send reply
     const char *reply = "All messages received";

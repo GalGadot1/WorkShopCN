@@ -24,25 +24,22 @@ void measure_throughput(int sock, int message_size, int num_messages) {
     struct timespec start, end;
     long total_bytes = 0;
 
-    printf("client 1\n");
 
     /*
     We chose warm up factor of 1000 by trying different numbers, and take the minimal number
     where the rest of the throughput seems to stabilize.
      */
-    if(message_size) {
+    if(message_size == 1) {
         for (int i = 0; i < WARM_UP_FACTOR; i++) {
             send(sock, message, message_size, 0);
         }
     }
-    printf("client 2\n");
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     for (int i = 0; i < num_messages; i++) {
         send(sock, message, message_size, 0);
         total_bytes += message_size;
     }
-    printf("client 3\n");
 
     ssize_t bytes_received = 0;
     while(1) {
@@ -51,7 +48,6 @@ void measure_throughput(int sock, int message_size, int num_messages) {
             break;
         }
     }
-    printf("client 4\n");
 
     clock_gettime(CLOCK_MONOTONIC, &end);
 
