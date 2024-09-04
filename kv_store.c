@@ -81,7 +81,6 @@ void* client_handler(void* arg) {
     while(1) {
         // Simulate receiving a SET request
         int valread = read(kv_handle->client_socket, key, MAX_KEY_LEN);
-        printf("server first read completed, val: %d\n", valread);
         if(valread <= 0) {
             close(kv_handle->client_socket);
             continue;
