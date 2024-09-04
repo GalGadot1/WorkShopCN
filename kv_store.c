@@ -89,18 +89,18 @@ void* client_handler(void* arg) {
         fcntl(kv_handle->client_socket, F_SETFL, flags | O_NONBLOCK);
         valread = read(kv_handle->client_socket, value, MAX_VALUE_LEN);
         fcntl(kv_handle->client_socket, F_SETFL, flags & ~O_NONBLOCK);
-        printf("server second read completed, val: %d\n", valread);
+        printf("server second read completed, val: %s\n", valread);
 
         if (valread > 0) {
             printf("server before handle_set\n");
             handle_set(key, value);
-            printf("server handle_set completed, val: %d\n", valread);
+            printf("server handle_set completed, val: %s\n", valread);
         } else {
             printf("server before handle_get\n");
             char *retrieved_value = handle_get(key);
             printf("server handle_get completed\n");
             write(kv_handle->client_socket, retrieved_value, MAX_VALUE_LEN);
-            printf("server 5, retrieved: %s,val: %d\n", retrieved_value, valread);
+            printf("server 5, retrieved: %s,val: %s\n", retrieved_value, valread);
         }
     }
 }
@@ -203,16 +203,21 @@ void start_client(char *hostname) {
 
     freeaddrinfo(res);  // Free the linked list
 
-    printf("client 1\n");
     kv_set(handle, "key1", "value1");
-    printf("client 2\n");
+    kv_set(handle, "key2", "value2");
 
-    char *value;
-    kv_get(handle, "key1", &value);
-    printf("client 3\n");
-    printf("Received value: %s\n", value);
 
-    kv_release(value);
+    char *value1;
+    char *value2;
+
+    kv_get(handle, "key2", &value2);
+    kv_get(handle, "key1", &value1);
+    printf("Received value for key1: %s\n", value1);
+    printf("Received value for key1: %s\n", value2);
+
+
+    kv_release(value1);
+    kv_release(value2);
     kv_close(handle);
 }
 
