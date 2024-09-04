@@ -9,7 +9,8 @@
 #include <time.h>
 
 #define PORT 11325
-#define WARM_UP_FACTOR 1000
+#define WARM_UP_FACTOR 500
+#define BUFFER_SIZE 1048576 // 1 MB buffer, adjust if needed
 
 void error(const char *msg) {
     perror(msg);
@@ -18,23 +19,40 @@ void error(const char *msg) {
 
 void measure_throughput(int sock, int message_size, int num_messages) {
     char *message = malloc(message_size);
+    char buffer[BUFFER_SIZE];
     memset(message, 'A', message_size);
     struct timespec start, end;
     long total_bytes = 0;
+
+    printf("client 1\n");
 
     /*
     We chose warm up factor of 1000 by trying different numbers, and take the minimal number
     where the rest of the throughput seems to stabilize.
      */
-    for (int i = 0; i < WARM_UP_FACTOR; i++) {
-        send(sock, message, message_size, 0);
+    if(message_size) {
+        for (int i = 0; i < WARM_UP_FACTOR; i++) {
+            send(sock, message, message_size, 0);
+        }
     }
+    printf("client 2\n");
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     for (int i = 0; i < num_messages; i++) {
         send(sock, message, message_size, 0);
         total_bytes += message_size;
     }
+    printf("client 3\n");
+
+    ssize_t bytes_received = 0;
+    while(1) {
+        bytes_received = recv(sock, buffer, sizeof(buffer), 0);
+        if(bytes_received > 0) {
+            break;
+        }
+    }
+    printf("client 4\n");
+
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     double time_taken = (end.tv_sec - start.tv_sec) * 1e9;
@@ -68,7 +86,7 @@ int main(int argc, char const *argv[]) {
         error("Connection Failed");
 
     int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
-    int num_messages = 10000; // Number of messages to send
+    int num_messages = 1000; // Number of messages to send
 
     for (int i = 0; i < sizeof(message_sizes) / sizeof(message_sizes[0]); i++) {
         measure_throughput(sock, message_sizes[i], num_messages);

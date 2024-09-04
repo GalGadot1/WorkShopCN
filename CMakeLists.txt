@@ -5,4 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(WorkShopCN main.c
         server.c
-        client.c)
+        client.c
+        bw_template.c
+        kv_store.c)
