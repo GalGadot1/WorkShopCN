@@ -538,7 +538,7 @@ static int pp_post_send(struct pingpong_context *ctx)
         .wr_id	    = PINGPONG_SEND_WRID,
         .sg_list    = &list,
         .num_sge    = 1,
-        .opcode     = IBV_WR_SEND,
+        .opcode     = IBV_WR_RDMA_WRITE,
         .send_flags = flags,
         .next       = NULL
     };
