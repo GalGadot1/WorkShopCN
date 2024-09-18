@@ -504,7 +504,7 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     struct ibv_sge list = {
             .addr	= (uintptr_t) ctx->buf,
             .length = ctx->size,
-            .lkey	= ctx->mr->rkey
+            .lkey	= ctx->mr->lkey
     };
     struct ibv_recv_wr wr = {
             .wr_id	    = PINGPONG_RECV_WRID,
@@ -527,7 +527,7 @@ static int pp_post_send(struct pingpong_context *ctx)
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
             .length = ctx->size,
-            .lkey	= ctx->mr->rkey
+            .lkey	= ctx->mr->lkey
     };
 
     int flags = IBV_SEND_SIGNALED;
@@ -542,6 +542,8 @@ static int pp_post_send(struct pingpong_context *ctx)
         .send_flags = flags,
         .next       = NULL
     };
+    wr.wr.rdma.remote_addr = (uint64_t)ctx->buf;
+    wr.wr.rdma.rkey = ctx->mr->rkey;
 
     return ibv_post_send(ctx->qp, &wr, &bad_wr);
 }
