@@ -439,7 +439,7 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
 
     {
         struct ibv_qp_attr attr = {
-                .qp_state        = IBV_QPS_INIT,
+                .qp_state        = IBV_QPS_RTS,
                 .pkey_index      = 0,
                 .port_num        = port,
                 .qp_access_flags = IBV_ACCESS_REMOTE_READ |
