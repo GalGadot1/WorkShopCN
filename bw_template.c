@@ -439,7 +439,7 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
 
     {
         struct ibv_qp_attr attr = {
-                .qp_state        = IBV_QPS_RTS,
+                .qp_state        = IBV_QPS_INIT,
                 .pkey_index      = 0,
                 .port_num        = port,
                 .qp_access_flags = IBV_ACCESS_REMOTE_READ |
@@ -504,7 +504,7 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     struct ibv_sge list = {
             .addr	= (uintptr_t) ctx->buf,
             .length = ctx->size,
-            .lkey	= ctx->mr->lkey
+            .lkey	= ctx->mr->rkey
     };
     struct ibv_recv_wr wr = {
             .wr_id	    = PINGPONG_RECV_WRID,
@@ -527,7 +527,7 @@ static int pp_post_send(struct pingpong_context *ctx)
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
             .length = ctx->size,
-            .lkey	= ctx->mr->lkey
+            .lkey	= ctx->mr->rkey
     };
 
     int flags = IBV_SEND_SIGNALED;
