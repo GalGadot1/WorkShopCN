@@ -255,7 +255,9 @@ static struct pingpong_dest *pp_client_exch_dest(const char *servername, int por
     if (!rem_dest)
         goto out;
 
-    sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
+    sscanf(msg, "%x:%x:%x:%s:%lx:%x",
+       &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid,
+       &rem_dest->vaddr, &rem_dest->rkey);
     wire_gid_to_gid(gid, &rem_dest->gid);
 
     out:
@@ -348,7 +350,9 @@ static struct pingpong_dest *pp_server_exch_dest(struct pingpong_context *ctx,
 
 
     gid_to_wire_gid(&my_dest->gid, gid);
-    sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
+    sprintf(msg, "%04x:%06x:%06x:%s:%016lx:%08x",
+        my_dest->lid, my_dest->qpn, my_dest->psn, gid,
+        my_dest->vaddr, my_dest->rkey);
     if (write(connfd, msg, sizeof msg) != sizeof msg) {
         fprintf(stderr, "Couldn't send local address\n");
         free(rem_dest);
