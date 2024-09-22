@@ -547,10 +547,9 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
         .opcode     = IBV_WR_RDMA_WRITE,
         .send_flags = flags,
         .next       = NULL
-        .wr.rdma.remote_addr = rem_dest->vaddr, // Use the remote buffer address
-        .wr.rdma.rkey        = rem_dest->rkey   // Use the remote rkey
     };
-
+    wr.wr.rdma.remote_addr = rem_dest->vaddr;
+    wr.wr.rdma.rkey        = rem_dest->rkey;
     return ibv_post_send(ctx->qp, &wr, &bad_wr);
 }
 
