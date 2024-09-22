@@ -51,6 +51,7 @@
 #include <infiniband/verbs.h>
 
 #define WC_BATCH (10)
+#define MSG_SIZE (sizeof "0000:000000:000000:00000000000000000000000000000000:0000000000000000:00000000")
 
 enum {
     PINGPONG_RECV_WRID = 1,
@@ -79,6 +80,8 @@ struct pingpong_dest {
     int qpn;
     int psn;
     union ibv_gid gid;
+    uint64_t vaddr; // Remote virtual address
+    uint32_t rkey;  // Remote rkey
 };
 
 enum ibv_mtu pp_mtu_to_enum(int mtu)
@@ -197,7 +200,7 @@ static struct pingpong_dest *pp_client_exch_dest(const char *servername, int por
             .ai_socktype = SOCK_STREAM
     };
     char *service;
-    char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+    char msg[MSG_SIZE];
     int n;
     int sockfd = -1;
     struct pingpong_dest *rem_dest = NULL;
@@ -233,7 +236,8 @@ static struct pingpong_dest *pp_client_exch_dest(const char *servername, int por
     }
 
     gid_to_wire_gid(&my_dest->gid, gid);
-    sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
+    sprintf(msg, "%04x:%06x:%06x:%s:%016lx:%08x",
+        my_dest->lid, my_dest->qpn, my_dest->psn, gid, my_dest->vaddr, my_dest->rkey);
     if (write(sockfd, msg, sizeof msg) != sizeof msg) {
         fprintf(stderr, "Couldn't send local address\n");
         goto out;
@@ -272,7 +276,8 @@ static struct pingpong_dest *pp_server_exch_dest(struct pingpong_context *ctx,
             .ai_socktype = SOCK_STREAM
     };
     char *service;
-    char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+    char msg[MSG_SIZE];
+
     int n;
     int sockfd = -1, connfd;
     struct pingpong_dest *rem_dest = NULL;
@@ -330,7 +335,8 @@ static struct pingpong_dest *pp_server_exch_dest(struct pingpong_context *ctx,
     if (!rem_dest)
         goto out;
 
-    sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
+    sscanf(msg, "%x:%x:%x:%s:%lx:%x",
+       &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid, &rem_dest->vaddr, &rem_dest->rkey);
     wire_gid_to_gid(gid, &rem_dest->gid);
 
     if (pp_connect_ctx(ctx, ib_port, my_dest->psn, mtu, sl, rem_dest, sgid_idx)) {
@@ -522,7 +528,7 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     return i;
 }
 
-static int pp_post_send(struct pingpong_context *ctx)
+static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_dest)
 {
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
@@ -541,9 +547,9 @@ static int pp_post_send(struct pingpong_context *ctx)
         .opcode     = IBV_WR_RDMA_WRITE,
         .send_flags = flags,
         .next       = NULL
+        .wr.rdma.remote_addr = rem_dest->vaddr, // Use the remote buffer address
+        .wr.rdma.rkey        = rem_dest->rkey   // Use the remote rkey
     };
-    wr.wr.rdma.remote_addr = (uint64_t)ctx->buf;
-    wr.wr.rdma.rkey = ctx->mr->rkey;
 
     return ibv_post_send(ctx->qp, &wr, &bad_wr);
 }
@@ -779,6 +785,9 @@ int main(int argc, char *argv[])
     }
 
     my_dest.lid = ctx->portinfo.lid;
+    my_dest.vaddr = (uintptr_t)ctx->buf;
+    my_dest.rkey = ctx->mr->rkey;
+
     if (ctx->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND && !my_dest.lid) {
         fprintf(stderr, "Couldn't get local LID\n");
         return 1;
@@ -830,7 +839,7 @@ int main(int argc, char *argv[])
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
                     // Post a new send request if there are available slots
-                    if (pp_post_send(ctx)) {
+                    if (pp_post_send(ctx, rem_dest)) {
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
@@ -872,7 +881,7 @@ int main(int argc, char *argv[])
 
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
-                    if (pp_post_send(ctx)) {
+                    if (pp_post_send(ctx, rem_dest)) {
                         fprintf(stderr, "Server couldn't post send\n");
                         return 1;
                     }
