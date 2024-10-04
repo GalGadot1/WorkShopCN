@@ -34,6 +34,7 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -184,7 +185,7 @@ static int pp_connect_ctx(struct pingpong_context *ctx, int port, int my_psn,
             IBV_QP_RNR_RETRY          |
             IBV_QP_SQ_PSN             |
             IBV_QP_MAX_QP_RD_ATOMIC)) {
-        fprintf(stderr, "Failed to modify QP to RTS\n");
+        fprintf(stderr, "Failed to modify QP to RTS: %s\n", strerror(errno));
         return 1;
     }
 
