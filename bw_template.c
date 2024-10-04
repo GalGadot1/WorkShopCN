@@ -452,7 +452,7 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
                 .qp_state        = IBV_QPS_INIT,
                 .pkey_index      = 0,
                 .port_num        = port,
-                .qp_access_flags = IBV_ACCESS_REMOTE_READ |
+                .qp_access_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ |
                 IBV_ACCESS_REMOTE_WRITE
         };
 
@@ -532,7 +532,7 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     return i;
 }
 
-static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_dest)
+static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_dest, int opcode)
 {
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
@@ -548,13 +548,38 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
         .wr_id	    = PINGPONG_SEND_WRID,
         .sg_list    = &list,
         .num_sge    = 1,
-        .opcode     = IBV_WR_RDMA_WRITE,
+        .opcode     = opcode,
         .send_flags = flags,
         .next       = NULL
     };
-    wr.wr.rdma.remote_addr = rem_dest->vaddr;
-    wr.wr.rdma.rkey        = rem_dest->rkey;
-    return ibv_post_send(ctx->qp, &wr, &bad_wr);
+    if(opcode != IBV_WR_SEND) {
+        wr.wr.rdma.remote_addr = rem_dest->vaddr;
+        wr.wr.rdma.rkey        = rem_dest->rkey;
+    }
+    int rc = ibv_post_send(ctx->qp, &wr, &bad_wr);
+    if(rc)
+    {
+        fprintf(stderr, "failed to post SR\n");
+    }
+    else
+    {
+        switch(opcode)
+        {
+            case IBV_WR_SEND:
+                fprintf(stdout, "Send Request was posted\n");
+            break;
+            case IBV_WR_RDMA_READ:
+                fprintf(stdout, "RDMA Read Request was posted\n");
+            break;
+            case IBV_WR_RDMA_WRITE:
+                fprintf(stdout, "RDMA Write Request was posted\n");
+            break;
+            default:
+                fprintf(stdout, "Unknown Request was posted\n");
+            break;
+        }
+    }
+    return rc;
 }
 
 int pp_wait_completions(struct pingpong_context *ctx, int iters)
@@ -842,7 +867,7 @@ int main(int argc, char *argv[])
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
                     // Post a new send request if there are available slots
-                    if (pp_post_send(ctx, rem_dest)) {
+                    if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
                         fprintf(stderr, "Client couldn't post send\n");
                         return 1;
                     }
@@ -885,7 +910,7 @@ int main(int argc, char *argv[])
 
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
-                    if (pp_post_send(ctx, rem_dest)) {
+                    if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_READ)) {
                         fprintf(stderr, "Server couldn't post send\n");
                         return 1;
                     }
