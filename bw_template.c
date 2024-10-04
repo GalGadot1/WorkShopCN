@@ -881,7 +881,7 @@ int main(int argc, char *argv[])
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
             int outstanding_sends = 0;
             int i = 0;
-            ctx->size = message_sizes[msg_ind];
+            // ctx->size = message_sizes[msg_ind];
 
             while (i < iters || outstanding_sends > 0) {
                 if (outstanding_sends < tx_depth && i < iters) {
