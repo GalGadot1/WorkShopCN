@@ -903,20 +903,23 @@ int main(int argc, char *argv[])
         printf("Client Done.\n");
     } else {
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
-            int outstanding_sends = 0;
-            int i = 0;
+            struct ibv_wc wc;
+            int ne, i = 0;
             // ctx->size = message_sizes[msg_ind];
+            // pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
 
-            while (i < iters || outstanding_sends > 0) {
-                if (outstanding_sends < tx_depth && i < iters) {
-                    if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_READ)) {
-                        fprintf(stderr, "Server couldn't post send\n");
-                        return 1;
-                    }
-                    outstanding_sends++;
-                    i++;
-                    pp_wait_completions(ctx, iters);
+            do {
+                ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                if (ne < 0) {
+                    fprintf(stderr, "poll CQ failed %d\n", ne);
+                    return 1;
                 }
+
+            } while (ne < 1);
+
+            if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
+                fprintf(stderr, "Server couldn't post send\n");
+                return 1;
             }
             printf("Server finshed iteration: %d, with message of size: %d.\n", msg_ind, message_sizes[msg_ind]);
         }
