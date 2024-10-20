@@ -875,6 +875,11 @@ int main(int argc, char *argv[])
                     i++;
                 }
 
+                if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
+                    fprintf(stderr, "Client couldn't post send\n");
+                    return 1;
+                }
+
                 struct ibv_wc wc;
                 int ne = ibv_poll_cq(ctx->cq, 1, &wc);
 
