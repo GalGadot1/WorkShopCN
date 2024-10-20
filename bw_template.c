@@ -602,7 +602,7 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
         if (wc.status != IBV_WC_SUCCESS) {
             fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
                     ibv_wc_status_str(wc.status),
-                    wc[i].status, (int) wc.wr_id);
+                    wc.status, (int) wc.wr_id);
             return 1;
         }
 
