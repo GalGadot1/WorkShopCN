@@ -542,9 +542,9 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
     };
 
     int flags = IBV_SEND_SIGNALED;
-    if(ctx->size < 829) {
-        flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
-    }
+    // if(ctx->size < 829) {
+    //     flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
+    // }
 
     struct ibv_send_wr *bad_wr, wr = {
         .wr_id	    = PINGPONG_SEND_WRID,
@@ -559,9 +559,10 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
         wr.wr.rdma.rkey        = rem_dest->rkey;
     }
     int rc = ibv_post_send(ctx->qp, &wr, &bad_wr);
-    if(rc)
-    {
-        fprintf(stderr, "failed to post SR\n");
+    if (rc) {
+        fprintf(stderr, "Failed to post SR, rc=%d\n", rc);
+        perror("ibv_post_send");
+        return rc;
     }
     // else
     // {
