@@ -855,7 +855,6 @@ int main(int argc, char *argv[])
     int message_sizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576}; // Exponential series
 
     if (servername) {
-
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
             int i = 0;
             int outstanding_sends = 0;
@@ -864,13 +863,35 @@ int main(int argc, char *argv[])
             ctx->size = message_sizes[msg_ind];
 
             clock_gettime(CLOCK_MONOTONIC, &start);
-            for(int i = 0; i < iters; i++) {
-                // Post a new send request if there are available slots
-                if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
-                    fprintf(stderr, "Client couldn't post send\n");
-                    return 1;
+            while (i < iters || outstanding_sends > 0) {
+                // Post new RDMA Write requests if there are available slots
+                if (outstanding_sends < tx_depth && i < iters) {
+                    if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
+                        fprintf(stderr, "Client couldn't post RDMA Write\n");
+                        return 1;
+                    }
+                    outstanding_sends++;
+                    total_bytes += message_sizes[msg_ind];
+                    i++;
                 }
-                total_bytes += message_sizes[msg_ind];
+
+                // Poll the completion queue to process completions
+                struct ibv_wc wc;
+                int ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                if (ne < 0) {
+                    fprintf(stderr, "Client polling failed\n");
+                    return 1;
+                } else if (ne > 0) {
+                    // Handle the completion
+                    if (wc.status != IBV_WC_SUCCESS) {
+                        fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                                ibv_wc_status_str(wc.status),
+                                wc.status, (int)wc.wr_id);
+                        return 1;
+                    }
+                    // Decrement outstanding sends
+                    outstanding_sends--;
+                }
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Client couldn't post send\n");
