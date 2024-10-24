@@ -545,6 +545,7 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
     if(ctx->size < 829) {
         flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
     }
+
     struct ibv_send_wr *bad_wr, wr = {
         .wr_id	    = PINGPONG_SEND_WRID,
         .sg_list    = &list,
@@ -863,38 +864,32 @@ int main(int argc, char *argv[])
             ctx->size = message_sizes[msg_ind];
 
             clock_gettime(CLOCK_MONOTONIC, &start);
-            while (i < iters || outstanding_sends > 0) {
-                if (outstanding_sends < tx_depth && i < iters) {
-                    // Post a new send request if there are available slots
-                    if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
-                        fprintf(stderr, "Client couldn't post send\n");
-                        return 1;
-                    }
-                    outstanding_sends++;
-                    total_bytes += message_sizes[msg_ind];
-                    i++;
-                }
-
-                struct ibv_wc wc;
-                int ne = ibv_poll_cq(ctx->cq, 1, &wc);
-
-                if (ne < 0) {
-                    fprintf(stderr, "Polling failed\n");
+            for(int i = 0; i < iters; i++) {
+                // Post a new send request if there are available slots
+                if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
+                    fprintf(stderr, "Client couldn't post send\n");
                     return 1;
-                } else if (ne > 0) {
-                    // We have a completion to handle
-                    if (wc.status != IBV_WC_SUCCESS) {
-                        fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                            ibv_wc_status_str(wc.status),
-                            wc.status, (int) wc.wr_id);
-                        return 1;
-                    }
-                    outstanding_sends--;  // Decrement outstanding sends on completion
                 }
+                total_bytes += message_sizes[msg_ind];
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Client couldn't post send\n");
                 return 1;
+            }
+            struct ibv_wc wc;
+            int ne = ibv_poll_cq(ctx->cq, 1, &wc);
+
+            if (ne < 0) {
+                fprintf(stderr, "Polling failed\n");
+                return 1;
+            } else if (ne > 0) {
+                // We have a completion to handle
+                if (wc.status != IBV_WC_SUCCESS) {
+                    fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                        ibv_wc_status_str(wc.status),
+                        wc.status, (int) wc.wr_id);
+                    return 1;
+                }
             }
             clock_gettime(CLOCK_MONOTONIC, &end);
 
