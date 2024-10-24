@@ -563,24 +563,24 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
         fprintf(stderr, "Failed to post SR, rc=%d (%s)\n", rc, strerror(rc));
         return rc;
     }
-    // else
-    // {
-    //     switch(opcode)
-    //     {
-    //         case IBV_WR_SEND:
-    //             fprintf(stdout, "Send Request was posted\n");
-    //         break;
-    //         case IBV_WR_RDMA_READ:
-    //             fprintf(stdout, "RDMA Read Request was posted\n");
-    //         break;
-    //         case IBV_WR_RDMA_WRITE:
-    //             fprintf(stdout, "RDMA Write Request was posted\n");
-    //         break;
-    //         default:
-    //             fprintf(stdout, "Unknown Request was posted\n");
-    //         break;
-    //     }
-    // }
+    else
+    {
+        switch(opcode)
+        {
+            case IBV_WR_SEND:
+                fprintf(stdout, "Send Request was posted\n");
+            break;
+            case IBV_WR_RDMA_READ:
+                fprintf(stdout, "RDMA Read Request was posted\n");
+            break;
+            case IBV_WR_RDMA_WRITE:
+                fprintf(stdout, "RDMA Write Request was posted\n");
+            break;
+            default:
+                fprintf(stdout, "Unknown Request was posted\n");
+            break;
+        }
+    }
     return rc;
 }
 
