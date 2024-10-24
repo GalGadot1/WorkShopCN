@@ -414,7 +414,7 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
         return NULL;
     }
 
-    ctx->mr = ibv_reg_mr(ctx->pd, ctx->buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ);
+    ctx->mr = ibv_reg_mr(ctx->pd, ctx->buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE);
     if (!ctx->mr) {
         fprintf(stderr, "Couldn't register MR\n");
         return NULL;
@@ -874,27 +874,27 @@ int main(int argc, char *argv[])
                     total_bytes += message_sizes[msg_ind];
                     i++;
                 }
+
+                struct ibv_wc wc;
+                int ne = ibv_poll_cq(ctx->cq, 1, &wc);
+
+                if (ne < 0) {
+                    fprintf(stderr, "Polling failed\n");
+                    return 1;
+                } else if (ne > 0) {
+                    // We have a completion to handle
+                    if (wc.status != IBV_WC_SUCCESS) {
+                        fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                            ibv_wc_status_str(wc.status),
+                            wc.status, (int) wc.wr_id);
+                        return 1;
+                    }
+                    outstanding_sends--;  // Decrement outstanding sends on completion
+                }
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Client couldn't post send\n");
                 return 1;
-            }
-
-            struct ibv_wc wc;
-            int ne = ibv_poll_cq(ctx->cq, 1, &wc);
-
-            if (ne < 0) {
-                fprintf(stderr, "Polling failed\n");
-                return 1;
-            } else if (ne > 0) {
-                // We have a completion to handle
-                if (wc.status != IBV_WC_SUCCESS) {
-                    fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                        ibv_wc_status_str(wc.status),
-                        wc.status, (int) wc.wr_id);
-                    return 1;
-                }
-                outstanding_sends--;  // Decrement outstanding sends on completion
             }
             clock_gettime(CLOCK_MONOTONIC, &end);
 
