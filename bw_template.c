@@ -560,8 +560,7 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
     }
     int rc = ibv_post_send(ctx->qp, &wr, &bad_wr);
     if (rc) {
-        fprintf(stderr, "Failed to post SR, rc=%d\n", rc);
-        perror("ibv_post_send");
+        fprintf(stderr, "Failed to post SR, rc=%d (%s)\n", rc, strerror(rc));
         return rc;
     }
     // else
