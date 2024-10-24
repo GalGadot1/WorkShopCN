@@ -903,7 +903,8 @@ int main(int argc, char *argv[])
     } else {
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
             struct ibv_wc wc;
-            int ne, i = 0;
+            int ne = -1;
+            int i = 0;
             // ctx->size = message_sizes[msg_ind];
             // pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
 
