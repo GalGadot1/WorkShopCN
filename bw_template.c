@@ -878,6 +878,7 @@ int main(int argc, char *argv[])
                 // Poll the completion queue to process completions
                 struct ibv_wc wc;
                 int ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                printf("outstanding_sends is %d.\n", outstanding_sends);
                 if (ne < 0) {
                     fprintf(stderr, "Client polling failed\n");
                     return 1;
