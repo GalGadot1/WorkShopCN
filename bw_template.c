@@ -882,16 +882,7 @@ int main(int argc, char *argv[])
                     fprintf(stderr, "Client polling failed\n");
                     return 1;
                 } else if (ne > 0) {
-                    // Handle the completion
-                    // if (wc.status == IBV_WC_SUCCESS) {
-                    //     fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                    //             ibv_wc_status_str(wc.status),
-                    //             wc.status, (int)wc.wr_id);
-                    //     return 1;
-                    // }
-                    if (wc.status == IBV_WC_SUCCESS) {
-                        outstanding_sends--;
-                    }
+                    outstanding_sends--;
                 }
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
