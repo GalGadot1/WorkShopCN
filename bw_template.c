@@ -881,7 +881,7 @@ int main(int argc, char *argv[])
                 if (ne < 0) {
                     fprintf(stderr, "Client polling failed\n");
                     return 1;
-                } else if (ne > 0) {
+                } else if (ne > 0 && wc.opcode == IBV_WC_RDMA_WRITE) {
                     outstanding_sends--;
                 }
             }
