@@ -882,7 +882,7 @@ int main(int argc, char *argv[])
                     fprintf(stderr, "Client polling failed\n");
                     return 1;
                 } else if (ne > 0 && wc.opcode == IBV_WC_RDMA_WRITE) {
-                    outstanding_sends--;
+                    outstanding_sends-=ne;
                 }
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
