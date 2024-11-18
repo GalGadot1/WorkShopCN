@@ -923,12 +923,17 @@ int main(int argc, char *argv[])
         }
         printf("Client Done.\n");
     } else {
+
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
             struct ibv_wc wc;
             int ne = -1;
-            int i = 0;
             // ctx->size = message_sizes[msg_ind];
             // pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
+
+            if (pp_post_recv(ctx, 1) < 0) {
+                fprintf(stderr, "Server failed to post receive\n");
+                return 1;
+            }
 
             do {
                 ne = ibv_poll_cq(ctx->cq, 1, &wc);
@@ -938,6 +943,14 @@ int main(int argc, char *argv[])
                 }
 
             } while (ne < 1);
+
+            switch (wc.opcode) {
+                case IBV_WC_RECV:
+                    printf("Received a message from client.\n");
+                    break;
+                default:
+                    printf("Received unexpected completion opcode %d\n", wc.opcode);
+            }
 
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Server couldn't post send\n");
