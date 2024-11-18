@@ -942,7 +942,7 @@ int main(int argc, char *argv[])
                     return 1;
                 }
 
-            } while (ne < 1);
+            } while (ne < 1 || (wc.opcode != IBV_WC_RECV));
 
             switch (wc.opcode) {
                 case IBV_WC_RECV:
