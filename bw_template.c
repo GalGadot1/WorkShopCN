@@ -135,7 +135,7 @@ void gid_to_wire_gid(const union ibv_gid *gid, char wgid[])
         sprintf(&wgid[i * 8], "%08x", htonl(*(uint32_t *)(gid->raw + i * 4)));
 }
 
-static int poll_completion(struct resources *res)
+static int poll_completion(struct pingpong_context *ctx)
 {
     struct ibv_wc wc;
     unsigned long start_time_msec;
@@ -914,12 +914,12 @@ int main(int argc, char *argv[])
             clock_gettime(CLOCK_MONOTONIC, &start);
             while (i < iters) {
                 fprintf(stderr, "iter is : %d\n", i);
-                if(pp_post_send(&ctx, rem_dest, IBV_WR_RDMA_WRITE))
+                if(pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE))
                 {
                     fprintf(stderr, "failed to post SR 2\n");
                     return 1;
                 }
-                if(poll_completion(&ctx))
+                if(poll_completion(ctx))
                 {
                     fprintf(stderr, "poll completion failed 2\n");
                     return 1;
