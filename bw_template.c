@@ -878,6 +878,7 @@ int main(int argc, char *argv[])
 
                 // Poll the completion queue to process completions
                 struct ibv_wc wc;
+                int ne;
                 do {
                     ne = ibv_poll_cq(ctx->cq, 1, &wc);
                     fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
