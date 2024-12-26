@@ -53,6 +53,7 @@
 
 #define WC_BATCH 1
 #define MSG_SIZE (sizeof "0000:000000:000000:00000000000000000000000000000000:0000000000000000:00000000")
+#define MAX_POLL_CQ_TIMEOUT 2000
 
 enum {
     PINGPONG_RECV_WRID = 1,
@@ -132,6 +133,52 @@ void gid_to_wire_gid(const union ibv_gid *gid, char wgid[])
 
     for (i = 0; i < 4; ++i)
         sprintf(&wgid[i * 8], "%08x", htonl(*(uint32_t *)(gid->raw + i * 4)));
+}
+
+static int poll_completion(struct resources *res)
+{
+    struct ibv_wc wc;
+    unsigned long start_time_msec;
+    unsigned long cur_time_msec;
+    struct timeval cur_time;
+    int poll_result;
+    int rc = 0;
+    /* poll the completion for a while before giving up of doing it .. */
+    gettimeofday(&cur_time, NULL);
+    start_time_msec = (cur_time.tv_sec * 1000) + (cur_time.tv_usec / 1000);
+    do
+    {
+        poll_result = ibv_poll_cq(ctx->cq, 1, &wc);
+        gettimeofday(&cur_time, NULL);
+        cur_time_msec = (cur_time.tv_sec * 1000) + (cur_time.tv_usec / 1000);
+    }
+    while((poll_result == 0) && ((cur_time_msec - start_time_msec) < MAX_POLL_CQ_TIMEOUT));
+
+    if(poll_result < 0)
+    {
+        /* poll CQ failed */
+        fprintf(stderr, "poll CQ failed\n");
+        rc = 1;
+    }
+    else if(poll_result == 0)
+    {
+        /* the CQ is empty */
+        fprintf(stderr, "completion wasn't found in the CQ after timeout\n");
+        rc = 1;
+    }
+    else
+    {
+        /* CQE found */
+        fprintf(stdout, "completion was found in CQ with status 0x%x\n", wc.status);
+        /* check the completion status (here we don't care about the completion opcode */
+        if(wc.status != IBV_WC_SUCCESS)
+        {
+            fprintf(stderr, "got bad completion with status: 0x%x, vendor syndrome: 0x%x\n",
+                    wc.status, wc.vendor_err);
+            rc = 1;
+        }
+    }
+    return rc;
 }
 
 static int pp_connect_ctx(struct pingpong_context *ctx, int port, int my_psn,
@@ -865,39 +912,49 @@ int main(int argc, char *argv[])
             ctx->size = message_sizes[msg_ind];
 
             clock_gettime(CLOCK_MONOTONIC, &start);
-            while (i < iters || outstanding_sends > 0) {
+            while (i < iters) {
                 fprintf(stderr, "iter is : %d\n", i);
-                // Post new RDMA Write requests if there are available slots
-                if (outstanding_sends < tx_depth && i < iters) {
-                    if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
-                        fprintf(stderr, "Client couldn't post RDMA Write\n");
-                        return 1;
-                    }
-                    outstanding_sends++;
-                    total_bytes += message_sizes[msg_ind];
-                    i++;
-                }
-
-                // Poll the completion queue to process completions
-                struct ibv_wc wc;
-                int ne;
-                ne = ibv_poll_cq(ctx->cq, 1, &wc);
-                fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
-                fprintf(stdout, "ne is: %d\n", ne);
-                if (ne < 0) {
-                    fprintf(stdout, "ne < 0\n");
-                    fprintf(stderr, "Client polling failed\n");
+                if(pp_post_send(&ctx, rem_dest, IBV_WR_RDMA_WRITE))
+                {
+                    fprintf(stderr, "failed to post SR 2\n");
                     return 1;
-                } else if (ne > 0) {
-                    fprintf(stdout, "ne is: %d\n", ne);
-                    if (wc.status != IBV_WC_SUCCESS) {
-                        fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                            ibv_wc_status_str(wc.status),
-                            wc.status, (int) wc.wr_id);
-                        return 1;
-                    }
-                    outstanding_sends-=ne;
                 }
+                if(poll_completion(&ctx))
+                {
+                    fprintf(stderr, "poll completion failed 2\n");
+                    return 1;
+                }
+                // // Post new RDMA Write requests if there are available slots
+                // if (outstanding_sends < tx_depth && i < iters) {
+                //     if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
+                //         fprintf(stderr, "Client couldn't post RDMA Write\n");
+                //         return 1;
+                //     }
+                //     outstanding_sends++;
+                //     total_bytes += message_sizes[msg_ind];
+                //     i++;
+                // }
+                //
+                // // Poll the completion queue to process completions
+                // struct ibv_wc wc;
+                // int ne;
+                // ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                // fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
+                // fprintf(stdout, "ne is: %d\n", ne);
+                // if (ne < 0) {
+                //     fprintf(stdout, "ne < 0\n");
+                //     fprintf(stderr, "Client polling failed\n");
+                //     return 1;
+                // } else if (ne > 0) {
+                //     fprintf(stdout, "ne is: %d\n", ne);
+                //     if (wc.status != IBV_WC_SUCCESS) {
+                //         fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                //             ibv_wc_status_str(wc.status),
+                //             wc.status, (int) wc.wr_id);
+                //         return 1;
+                //     }
+                //     outstanding_sends-=ne;
+                // }
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Client couldn't post send\n");
