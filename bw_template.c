@@ -865,14 +865,15 @@ int main(int argc, char *argv[])
             ctx->size = message_sizes[msg_ind];
 
             clock_gettime(CLOCK_MONOTONIC, &start);
-            while (i < iters ) {
+            while (i < iters || outstanding_sends > 0) {
                 fprintf(stderr, "iter is : %d\n", i);
                 // Post new RDMA Write requests if there are available slots
-                if (i < iters) {
+                if (outstanding_sends < tx_depth && i < iters) {
                     if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
                         fprintf(stderr, "Client couldn't post RDMA Write\n");
                         return 1;
                     }
+                    outstanding_sends++;
                     total_bytes += message_sizes[msg_ind];
                     i++;
                 }
