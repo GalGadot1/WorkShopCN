@@ -888,7 +888,9 @@ int main(int argc, char *argv[])
                         return 1;
                     } else if (ne > 0) {
                         fprintf(stdout, "ne is: %d\n", ne);
-                        outstanding_sends -= ne;
+                        if (wc.opcode == IBV_WC_RDMA_WRITE) {
+                            outstanding_sends--;
+                        }
                     }
                 } while (ne > 0);
             }
