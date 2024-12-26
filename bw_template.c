@@ -914,7 +914,7 @@ int main(int argc, char *argv[])
             clock_gettime(CLOCK_MONOTONIC, &start);
             while (i < iters) {
                 fprintf(stderr, "iter is : %d\n", i);
-                if (pp_post_recv(ctx, 1, 3) < 0) {
+                if (pp_post_recv(ctx, rx_depth, 3) < 0) {
                     fprintf(stderr, "Server failed to post receive\n");
                     return 1;
                 }
@@ -993,10 +993,8 @@ int main(int argc, char *argv[])
         for (int msg_ind = 0; msg_ind < sizeof(message_sizes) / sizeof(message_sizes[0]); msg_ind++) {
             struct ibv_wc wc;
             int ne = -1;
-            // ctx->size = message_sizes[msg_ind];
-            // pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
 
-            if (pp_post_recv(ctx, 1, 4) < 0) {
+            if (pp_post_recv(ctx, rx_depth, 4) < 0) {
                 fprintf(stderr, "Server failed to post receive\n");
                 return 1;
             }
