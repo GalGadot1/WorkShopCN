@@ -557,7 +557,7 @@ int pp_close_ctx(struct pingpong_context *ctx)
     return 0;
 }
 
-static int pp_post_recv(struct pingpong_context *ctx, int n)
+static int pp_post_recv(struct pingpong_context *ctx, int n, int wr_id)
 {
     struct ibv_sge list = {
             .addr	= (uintptr_t) ctx->buf,
@@ -565,7 +565,7 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
             .lkey	= ctx->mr->lkey
     };
     struct ibv_recv_wr wr = {
-            .wr_id	    = PINGPONG_RECV_WRID,
+            .wr_id	    = wr_id,
             .sg_list    = &list,
             .num_sge    = 1,
             .next       = NULL
@@ -914,6 +914,10 @@ int main(int argc, char *argv[])
             clock_gettime(CLOCK_MONOTONIC, &start);
             while (i < iters) {
                 fprintf(stderr, "iter is : %d\n", i);
+                if (pp_post_recv(ctx, 1, 3) < 0) {
+                    fprintf(stderr, "Server failed to post receive\n");
+                    return 1;
+                }
                 if(pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE))
                 {
                     fprintf(stderr, "failed to post SR 2\n");
@@ -992,7 +996,7 @@ int main(int argc, char *argv[])
             // ctx->size = message_sizes[msg_ind];
             // pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
 
-            if (pp_post_recv(ctx, 1) < 0) {
+            if (pp_post_recv(ctx, 1, 4) < 0) {
                 fprintf(stderr, "Server failed to post receive\n");
                 return 1;
             }
