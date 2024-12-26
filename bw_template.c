@@ -914,7 +914,7 @@ int main(int argc, char *argv[])
                 return 1;
             } else if (ne > 0) {
                 // We have a completion to handle
-                if (wc.status != IBV_WC_SUCCESS) {
+                if (wc.status != RDMA_WRITE_COMPLETE) {
                     fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
                         ibv_wc_status_str(wc.status),
                         wc.status, (int) wc.wr_id);
