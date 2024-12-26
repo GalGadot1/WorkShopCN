@@ -880,9 +880,11 @@ int main(int argc, char *argv[])
                 int ne = ibv_poll_cq(ctx->cq, 1, &wc);
                 fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
                 if (ne < 0) {
+                    fprintf(stdout, "ne < 0\n");
                     fprintf(stderr, "Client polling failed\n");
                     return 1;
                 } else if (ne > 0) {
+                    fprintf(stdout, "ne is: %d\n", ne);
                     outstanding_sends-=ne;
                 }
             }
