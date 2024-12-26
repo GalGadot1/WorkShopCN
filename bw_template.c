@@ -878,16 +878,18 @@ int main(int argc, char *argv[])
 
                 // Poll the completion queue to process completions
                 struct ibv_wc wc;
-                int ne = ibv_poll_cq(ctx->cq, 1, &wc);
-                fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
-                if (ne < 0) {
-                    fprintf(stdout, "ne < 0\n");
-                    fprintf(stderr, "Client polling failed\n");
-                    return 1;
-                } else if (ne > 0) {
-                    fprintf(stdout, "ne is: %d\n", ne);
-                    outstanding_sends-=ne;
-                }
+                do {
+                    ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                    fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
+                    if (ne < 0) {
+                        fprintf(stdout, "ne < 0\n");
+                        fprintf(stderr, "Client polling failed\n");
+                        return 1;
+                    } else if (ne > 0) {
+                        fprintf(stdout, "ne is: %d\n", ne);
+                        outstanding_sends -= ne;
+                    }
+                } while (ne > 0);
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Client couldn't post send\n");
