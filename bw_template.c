@@ -663,7 +663,7 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
 
         case PINGPONG_RECV_WRID:
             if (--ctx->routs <= 10) {
-                ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs, 6);
+                ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs, PINGPONG_RECV_WRID);
                 if (ctx->routs < ctx->rx_depth) {
                     fprintf(stderr,
                             "Couldn't post receive (%d)\n",
@@ -843,7 +843,7 @@ int main(int argc, char *argv[])
     if (!ctx)
         return 1;
 
-    ctx->routs = pp_post_recv(ctx, ctx->rx_depth, 5);
+    ctx->routs = pp_post_recv(ctx, ctx->rx_depth, PINGPONG_RECV_WRID);
     if (ctx->routs < ctx->rx_depth) {
         fprintf(stderr, "Couldn't post receive (%d)\n", ctx->routs);
         return 1;
@@ -914,7 +914,7 @@ int main(int argc, char *argv[])
             clock_gettime(CLOCK_MONOTONIC, &start);
             while (i < iters) {
                 fprintf(stderr, "iter is : %d\n", i);
-                if (pp_post_recv(ctx, ctx->rx_depth, 3) < 0) {
+                if (pp_post_recv(ctx, ctx->rx_depth, PINGPONG_RECV_WRID) < 0) {
                     fprintf(stderr, "Server failed to post receive\n");
                     return 1;
                 }
@@ -994,7 +994,7 @@ int main(int argc, char *argv[])
             struct ibv_wc wc;
             int ne = -1;
 
-            if (pp_post_recv(ctx, ctx->rx_depth, 4) < 0) {
+            if (pp_post_recv(ctx, ctx->rx_depth, PINGPONG_RECV_WRID) < 0) {
                 fprintf(stderr, "Server failed to post receive\n");
                 return 1;
             }
