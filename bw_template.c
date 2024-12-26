@@ -876,30 +876,28 @@ int main(int argc, char *argv[])
                     total_bytes += message_sizes[msg_ind];
                     i++;
                 }
-                //
-                // // Poll the completion queue to process completions
-                // struct ibv_wc wc;
-                // int ne;
-                // do {
-                //     ne = ibv_poll_cq(ctx->cq, 1, &wc);
-                //     fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
-                //     if (ne < 0) {
-                //         fprintf(stdout, "ne < 0\n");
-                //         fprintf(stderr, "Client polling failed\n");
-                //         return 1;
-                //     } else if (ne > 0) {
-                //         fprintf(stdout, "ne is: %d\n", ne);
-                //         if (wc.status != IBV_WC_SUCCESS) {
-                //             fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-                //                 ibv_wc_status_str(wc.status),
-                //                 wc.status, (int) wc.wr_id);
-                //             return 1;
-                //         }
-                //         if (wc.opcode == IBV_WC_RDMA_WRITE) {
-                //             outstanding_sends--;
-                //         }
-                //     }
-                // } while (ne > 0);
+
+                // Poll the completion queue to process completions
+                struct ibv_wc wc;
+                int ne;
+                do {
+                    ne = ibv_poll_cq(ctx->cq, 1, &wc);
+                    fprintf(stdout, "outstanding_sends is %d.\n", outstanding_sends);
+                    if (ne < 0) {
+                        fprintf(stdout, "ne < 0\n");
+                        fprintf(stderr, "Client polling failed\n");
+                        return 1;
+                    } else if (ne > 0) {
+                        fprintf(stdout, "ne is: %d\n", ne);
+                        if (wc.status != IBV_WC_SUCCESS) {
+                            fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                                ibv_wc_status_str(wc.status),
+                                wc.status, (int) wc.wr_id);
+                            return 1;
+                        }
+                        outstanding_sends--;
+                    }
+                } while (ne > 0);
             }
             if (pp_post_send(ctx, rem_dest, IBV_WR_SEND)) {
                 fprintf(stderr, "Client couldn't post send\n");
