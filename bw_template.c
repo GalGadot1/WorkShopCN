@@ -864,6 +864,7 @@ int main(int argc, char *argv[])
 
             clock_gettime(CLOCK_MONOTONIC, &start);
             while (i < iters || outstanding_sends > 0) {
+                fprintf(stderr, "iter is : %d\n", i);
                 // Post new RDMA Write requests if there are available slots
                 if (outstanding_sends < tx_depth && i < iters) {
                     if (pp_post_send(ctx, rem_dest, IBV_WR_RDMA_WRITE)) {
