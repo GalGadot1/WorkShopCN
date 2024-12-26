@@ -896,7 +896,7 @@ int main(int argc, char *argv[])
                                 wc.status, (int) wc.wr_id);
                             return 1;
                         }
-                        outstanding_sends--;
+                        outstanding_sends-=ne;
                     }
                 } while (ne > 0);
             }
