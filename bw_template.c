@@ -558,6 +558,8 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
         wr.wr.rdma.remote_addr = rem_dest->vaddr;
         wr.wr.rdma.rkey        = rem_dest->rkey;
     }
+    fprintf(stderr, "Posting WQE: opcode=%d, flags=0x%x\n",
+        wr.opcode, wr.send_flags);
     int rc = ibv_post_send(ctx->qp, &wr, &bad_wr);
     if (rc) {
         fprintf(stderr, "Failed to post SR, rc=%d (%s)\n", rc, strerror(rc));
@@ -888,6 +890,12 @@ int main(int argc, char *argv[])
                         return 1;
                     } else if (ne > 0) {
                         fprintf(stdout, "ne is: %d\n", ne);
+                        if (wc.status != IBV_WC_SUCCESS) {
+                            fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
+                                ibv_wc_status_str(wc.status),
+                                wc.status, (int) wc.wr_id);
+                            return 1;
+                        }
                         if (wc.opcode == IBV_WC_RDMA_WRITE) {
                             outstanding_sends--;
                         }
