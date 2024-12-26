@@ -594,7 +594,7 @@ static int pp_post_send(struct pingpong_context *ctx, struct pingpong_dest *rem_
     // }
 
     struct ibv_send_wr *bad_wr, wr = {
-        .wr_id	    = PINGPONG_SEND_WRID,
+        .wr_id	    = 0,
         .sg_list    = &list,
         .num_sge    = 1,
         .opcode     = opcode,
