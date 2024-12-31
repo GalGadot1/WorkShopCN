@@ -720,7 +720,8 @@ void sending_experiment(struct pingpong_context *ctx, const size_t message_lengt
     clock_gettime(CLOCK_MONOTONIC, &start);
 
     for (int i = 0; i < test_rounds; i++) {
-        if (my_post_send(ctx, message_length)){
+        ctx->size = message_length;
+        if (pp_post_send(ctx)){
             fprintf(stderr, "Client ouldn't post send test %d for meesage length %d\n", i, message_length);
             exit(1);
         }
