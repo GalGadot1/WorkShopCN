@@ -694,10 +694,7 @@ double get_time_diff(const struct timespec start, const struct timespec end) {
 }
 
 
-void sending_experiment(
-    struct pingpong_context *ctx,
-    const size_t message_length
-) {
+void sending_experiment(struct pingpong_context *ctx, const size_t message_length) {
     int warm_up_rounds = WARM_UP_ROUNDS;
     int test_rounds = TEST_ROUNDS;
     if (message_length <= 2048) {
@@ -707,7 +704,8 @@ void sending_experiment(
 
     // Send warm-up messages
     for (int i = 0; i < warm_up_rounds; i++) {
-        if (my_post_send(ctx, message_length)){
+        ctx->size = message_length;
+        if (pp_post_send(ctx)){
             fprintf(stderr, "Client couldn't post send warmup %d for meesage length %d\n", i, message_length);
             exit(1);
         }
