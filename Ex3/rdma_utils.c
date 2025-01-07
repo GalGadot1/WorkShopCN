@@ -624,6 +624,7 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
         free(rem_dest);
         goto out_exhange_front;
     }
+    fprintf(stderr, "Reached end of exchange_rdma_information_front\n");
 
     free(rem_dest);
     return EXIT_SUCCESS;
