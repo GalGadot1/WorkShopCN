@@ -280,7 +280,7 @@ static int setup_process_group_local_info(struct pg_handle_t *pg) {
  * set_back_socket_to_listen - Sets the back socket to listen for incoming connections.
  * Based on pp_server_exch_dest.
  */
-static void set_back_socket_to_listen(int *sockfd_back, const uint8_t ring_location) {
+static void set_back_socket_to_listen(int *sockfd_back) {
     *sockfd_back = -1;                     // Back socket file descriptor
     char *service;                       // Port number as a string
     struct addrinfo *res_back;            // To hold address info for the sockets
@@ -292,7 +292,7 @@ static void set_back_socket_to_listen(int *sockfd_back, const uint8_t ring_locat
     };
 
     // Convert port numbers to string and store them in `service` variables
-    if (asprintf(&service, "%d", TCP_PORT + ring_location) < 0) {
+    if (asprintf(&service, "%d", TCP_PORT) < 0) {
         perror("Failed to convert port number to string");
         return;
     }
@@ -552,7 +552,7 @@ static int connect_with_poll(int sockfd, struct sockaddr *addr, socklen_t addrle
  * @param servername: The name of the server to connect to.
  * @return EXIT_SUCCESS or EXIT_FAILURE.
  */
-static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servername, const uint8_t ring_location) {
+static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servername) {
     struct addrinfo *res_front;
     struct addrinfo hints_front = {
         .ai_family   = AF_INET,
@@ -562,7 +562,7 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
     int sockfd_front = -1;
 
     // Convert port numbers to string and store them in `service` variables
-    if (asprintf(&service, "%d", TCP_PORT + ring_location) < 0) {
+    if (asprintf(&service, "%d", TCP_PORT) < 0) {
         perror("Failed to convert port number to string the second time");
         pg_close(pg);
         return EXIT_FAILURE;
@@ -679,7 +679,7 @@ int connect_process_group(char *servername, void **pg_handle, const uint8_t ring
     int sockfd_back = -1; // Socket file descriptors
 
     // Set the back socket to listen for incoming connections
-    set_back_socket_to_listen(&sockfd_back, ring_location);
+    set_back_socket_to_listen(&sockfd_back);
     if (sockfd_back < 0) {
         fprintf(stderr, "Failed to set back socket to listen\n");
         pg_close(pg);
@@ -687,7 +687,7 @@ int connect_process_group(char *servername, void **pg_handle, const uint8_t ring
     }
 
     // connect to front as client if you are in position 0
-    if (ring_location==0 && exchange_rdma_information_front(pg, servername, ring_location)==EXIT_FAILURE) {
+    if (ring_location==0 && exchange_rdma_information_front(pg, servername)==EXIT_FAILURE) {
         fprintf(stderr, "Failed to exchange RDMA information with front\n");
         pg_close(pg);
         return EXIT_FAILURE;
@@ -700,7 +700,7 @@ int connect_process_group(char *servername, void **pg_handle, const uint8_t ring
     }
 
     // connect to front as client if you got a successful connection from back (not position 0)
-    if (ring_location!=0 && exchange_rdma_information_front(pg, servername, ring_location)==EXIT_FAILURE) {
+    if (ring_location!=0 && exchange_rdma_information_front(pg, servername)==EXIT_FAILURE) {
         fprintf(stderr, "Failed to exchange RDMA information with front\n");
         pg_close(pg);
         return EXIT_FAILURE;
