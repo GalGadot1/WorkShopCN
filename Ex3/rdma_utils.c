@@ -701,6 +701,7 @@ int connect_process_group(char *servername, void **pg_handle, const uint8_t ring
     pg->ring_location = ring_location; // Placeholder - this should be assigned based on ring order
     pg->ring_size = ring_size; // Placeholder - this should be assigned based on total number of processes
 
+    fprintf(stderr, "Reached end of connect_process_group\n");
     return EXIT_SUCCESS;
 }
 
