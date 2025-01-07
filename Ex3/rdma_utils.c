@@ -607,7 +607,7 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
 
     if (read(sockfd_front, msg, sizeof msg) != sizeof msg) {
         perror("client read");
-        fprintf(stderr, "Couldn't read front remote address\n");
+        fprintf(stdout, "Couldn't read front remote address\n");
         goto out_exhange_front;
     }
     fprintf(stderr, "Reached 3\n");
