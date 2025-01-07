@@ -577,6 +577,7 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
         fprintf(stderr, "Couldn't get address info for %s\n", servername);
         return EXIT_FAILURE;
     }
+    fprintf(stderr, "Start of loop\n");
     for (struct addrinfo *t = res_front; t; t = t->ai_next) {
         sockfd_front = socket(t->ai_family, t->ai_socktype, t->ai_protocol);
         if (sockfd_front >= 0) {
