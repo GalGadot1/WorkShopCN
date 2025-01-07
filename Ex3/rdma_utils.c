@@ -586,6 +586,8 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
             sockfd_front = -1;
         }
     }
+    fprintf(stderr, "Reached end of loop\n");
+
     freeaddrinfo(res_front);
 
     if (sockfd_front < 0) {
