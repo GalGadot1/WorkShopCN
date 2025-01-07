@@ -7,7 +7,7 @@
 
 #define DEBUG_MODE true
 
-#define TCP_PORT 12543
+#define TCP_PORT 11397
 #define IB_PORT  1
 
 struct pg_dest {
