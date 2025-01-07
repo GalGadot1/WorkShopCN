@@ -538,6 +538,7 @@ static int connect_with_poll(int sockfd, struct sockaddr *addr, socklen_t addrle
         fprintf(stderr, "Failed to set socket to blocking mode\n");
         return EXIT_FAILURE;
     }
+    fprintf(stderr, "Reached end of connect_with_poll\n");
 
     return EXIT_SUCCESS;
 }
