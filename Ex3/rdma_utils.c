@@ -597,7 +597,7 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
 
     const struct pg_dest my_dest = pg->front.self_dest;
     char msg[sizeof TCP_MSG_FORMAT];
-    sprintf(msg, "%04x:%06x:%06x", my_dest.lid, my_dest.qpn, my_dest.psn);
+    sprintf(msg, "%04x:%06x:%06x\n", my_dest.lid, my_dest.qpn, my_dest.psn);
     if (write(sockfd_front, msg, sizeof msg) != sizeof msg) {
         fprintf(stderr, "Couldn't send local address while connecting to front server\n");
         goto out_exhange_front;
@@ -617,7 +617,7 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
         goto out_exhange_front;
     }
 
-    sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
+    sscanf(msg, "%x:%x:%x\n", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
     printf(" Front remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x\n",
        rem_dest->lid, rem_dest->qpn, rem_dest->psn);
 
