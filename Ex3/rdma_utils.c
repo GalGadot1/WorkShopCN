@@ -594,20 +594,23 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
         fprintf(stderr, "Couldn't connect to front server %s:%d\n", servername, TCP_PORT);
         return EXIT_FAILURE;
     }
+    fprintf(stderr, "Reached 1\n");
 
     const struct pg_dest my_dest = pg->front.self_dest;
     char msg[sizeof TCP_MSG_FORMAT];
-    sprintf(msg, "%04x:%06x:%06x\n", my_dest.lid, my_dest.qpn, my_dest.psn);
+    sprintf(msg, "%04x:%06x:%06x", my_dest.lid, my_dest.qpn, my_dest.psn);
     if (write(sockfd_front, msg, sizeof msg) != sizeof msg) {
         fprintf(stderr, "Couldn't send local address while connecting to front server\n");
         goto out_exhange_front;
     }
+    fprintf(stderr, "Reached 2\n");
 
     if (read(sockfd_front, msg, sizeof msg) != sizeof msg) {
         perror("client read");
         fprintf(stderr, "Couldn't read front remote address\n");
         goto out_exhange_front;
     }
+    fprintf(stderr, "Reached 3\n");
 
     write(sockfd_front, ACK_MESSAGE, sizeof ACK_MESSAGE);
 
@@ -616,8 +619,9 @@ static int exchange_rdma_information_front(struct pg_handle_t *pg, char *servern
         fprintf(stderr, "Failed to allocate memory for remote destination\n");
         goto out_exhange_front;
     }
+    fprintf(stderr, "Reached 4\n");
 
-    sscanf(msg, "%x:%x:%x\n", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
+    sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
     printf(" Front remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x\n",
        rem_dest->lid, rem_dest->qpn, rem_dest->psn);
 
